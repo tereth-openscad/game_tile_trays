@@ -1,58 +1,17 @@
 
-/////// ---- Holes ---- ///////
-//  [0  1  2]
-//  [3  4  5]
-column0_hx = hsq;
-column1_hx = sq_tile+wall_thickness+hrw;
-column2_hx = 3*hsq + rec_tile_w + 2*wall_thickness;
 
-row0_vy = rec_tile_h+hsq+wall_thickness;
-row1_vy = hsq;
-
-top_hy = sq_tile+wall_thickness+rec_tile_h+ht;
-bottom_hy = -ht;
-left_vx = -ht;
-row1_right_vx = sq_tile*2 + rec_tile_w + 2*wall_thickness + ht;
-
-// [[w, h], is_vert, diameter]
-hole_locations=[ [[left_vx,row1_vy],true,hsq],
-                 [[column0_hx,bottom_hy],false,hsq],
-                 [[sq_tile+ht,row1_vy],true,hsq],
-                 [[column0_hx,sq_tile+ht],false,hrw],
-                 [[column1_hx,bottom_hy],false,hrw],
-                 [[column1_hx,rec_tile_h+ht],false,hrw],
-                 [[column0_hx,top_hy],false,hrw],
-                 [[column2_hx,top_hy],false,hrw],
-                 [[row1_right_vx,row1_vy],true,hrw],
-                 [[column2_hx, bottom_hy],false,hsq],
-                 [[column2_hx, sq_tile+ht], false,hrw],
-                 //right of 4
-                 [[sq_tile+wall_thickness+rec_tile_w+ht, row1_vy],true,hsq],
-                 //top of 1
-                 [[column1_hx,top_hy], false,hsq],
-                 //left of 0
-                 [[left_vx+row_offset,row0_vy],true,hsq],
-                 //right of 0 && left of 1
-                 [[row_offset+rec_tile_w+ht, row0_vy],true,hsq],
-                 //right of 1 && left of 2
-                 [[row_offset+rec_tile_w+wall_thickness+sq_tile+ht, row0_vy],true,hsq],
-                 //right of 2
-                 [[row_offset+2*rec_tile_w+2*wall_thickness+sq_tile+ht, row0_vy],true,hsq],
-                 ];
-/////// ---- Holes ---- ///////
-
-module create_hole_border(is_vert, size, line_width) {
+module create_hole_border(is_vert, size, line_width, w_thickness) {
     difference() {
-        create_single_hole(is_vert, size);
-        create_single_hole(is_vert, size-line_width);
+        create_single_hole(is_vert, size, w_thickness);
+        translate([0,0,-.1])create_single_hole(is_vert, size-line_width, w_thickness);
     }
 }
 
-module create_single_hole(is_vert, size) {
+module create_single_hole(is_vert, size, w_thickness) {
     rotate(is_vert ? 0 : 90) {
-        translate([wall_thickness/2,0]) {
+        translate([w_thickness/2,0]) {
             hull() {
-                translate([-wall_thickness,0]) {
+                translate([-w_thickness,0]) {
                     circle(size/2);
                 }
                 circle(size/2);
@@ -61,23 +20,23 @@ module create_single_hole(is_vert, size) {
     }
 }
 
-module create_holes() {
-    linear_extrude(bottom_thickness+num_tiles*tile_thickness+2) {
-        for(i = hole_locations) {
+module create_holes(hole_vector, z, w_thickness, size_mod=0) {
+    linear_extrude(z) {
+        for(i = hole_vector) {
             translate(i[0]) {
                 is_vert = i[1];
-                create_single_hole(is_vert, i[2]);
+                create_single_hole(is_vert, i[2]-size_mod, w_thickness);
             }
         }
     }
 }
 
-module create_hole_borders() {
-    linear_extrude(bottom_thickness) {
-        for(i = hole_locations) {
+module create_hole_borders(hole_vector, z, hole_border) {
+    linear_extrude(z) {
+        for(i = hole_vector) {
             translate(i[0]) {
                 is_vert = i[1];
-                create_hole_border(is_vert, i[2], hole_border_thickness);
+                create_hole_border(is_vert, i[2], hole_border);
             }
         }
     }

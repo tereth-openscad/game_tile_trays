@@ -8,15 +8,15 @@ bottom_left_magnet=false;
 
 module magnet_hole(size, depth) {
     translate([0,0,-depth])
-        linear_extrude(depth+.1) 
+        linear_extrude(depth+1) 
             circle(d=size);
 }
 
 magnet_circle_size = magnet_diameter + row_offset/2;
 magnet_square_size = [wall_thickness+sq_rec_diff, magnet_diameter+1];
 magnet_bases_holes = [
-                        [[-wall_thickness, sq_tile+wall_thickness], [row_offset-magnet_radius,sq_tile+magnet_radius+1]],
-                        [[row_offset+row_2_w+3*wall_thickness,sq_tile+wall_thickness], [row_offset+row_2_w+3*wall_thickness,sq_tile+magnet_radius+1]],
+                        [[-wall_thickness, sq_tile+wall_thickness], [row_offset-magnet_radius-.1,sq_tile+magnet_radius+1]],
+                        [[row_offset+row_2_w+3*wall_thickness,sq_tile+wall_thickness], [row_offset+row_2_w+2*wall_thickness+magnet_radius+.1,sq_tile+magnet_radius+1]],
                         [[], [-magnet_radius, -magnet_radius]]
                      ];
 

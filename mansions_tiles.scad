@@ -9,7 +9,11 @@ module gridify(width, height, percentage, line_width) {
     translate([0,height-line_width])resize([width,line_width]) square(1);
 }
 
-module create_tile(w_h, base_thickness, fill_percentage=1) {
+// module create_tile(w_h, base_thickness, fill_percentage=1, g_line_width)
+// w_h - vector of [width, height]
+// base_thickness - how thick the base should be
+// fill_percentage - fill percentage of the base grid (1 for no grid)
+module create_tile(w_h, base_thickness, fill_percentage=1, g_line_width=1) {
     width = w_h[0];
     height = w_h[1];
     intersection() {
@@ -18,18 +22,22 @@ module create_tile(w_h, base_thickness, fill_percentage=1) {
         }
         if(fill_percentage < 1) {
             linear_extrude(base_thickness+1) {
-                gridify(width, height, fill_percentage, grid_line_width);
+                gridify(width, height, fill_percentage, g_line_width);
             }
         }
     }
 }
 
-module create_wall(w_h, wall_height, wall_thickness) {
+// module create_wall(w_h, wall_height, w_thickness)
+// w_h - vector of [width, height]
+// wall_height - how tall the walls should be
+// w_thickness - thickness of the walls
+module create_wall(w_h, wall_height, w_thickness) {
     width = w_h[0];
     height = w_h[1];
     linear_extrude(wall_height) {
         difference() {
-            translate([-wall_thickness,-wall_thickness])resize([width+wall_thickness*2, height+wall_thickness*2])square(1);
+            translate([-w_thickness,-w_thickness])resize([width+w_thickness*2, height+w_thickness*2])square(1);
             resize([width, height])square(1);
         }
     }
