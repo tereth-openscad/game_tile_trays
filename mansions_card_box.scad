@@ -1,76 +1,168 @@
 
-wall_lines = 4;//should be even
-bottom_layers=10;
+__version__ = 4;
+
+test = false;
+wall_lines = 6;//should be even
+bottom_layers=test?3:10;
 num_tiles=0;
 
 include <mansions_tile_sizes.scad>
 include <mansions_tiles.scad>
 use <helpers/openscad_manual/list.scad>
 
-num_bays=1;
 
-slide_cut = 2*line_width;
+slide_cut = min(3*line_width, wall_lines * line_width / 2);
 
 slide_thickness = 2;
-card_extension = 20;
+card_extension = test ? 60 : 20;
 division_offset = 5+slide_thickness;
+
+tolerance = .2;
+chamfer_size = .4;
+
+assert(tolerance*2 < slide_cut, "Slide cut doesn't allow for appropriate tolerances");
+echo(2*slide_cut-tolerance*2);
 
 damage_thickness = 45;
 sanity_thickness = 45;
+cond_thickness = 30;
+insane_thickness = 20;
+
 c_item_thickness = 50;
 u_item_thickness = 30;
 spells_thickness = 45;
-cond_thickness = 30;
-insane_thickness = 20;
 elixir_thickness = 5;
 
 function calc_bay_usage(v, thickness) = add2(v) + len(v)*slide_thickness;
 function calc_bay_size(size, last=1) = last*division_offset < size ? calc_bay_size(size,last+1) : last;
 
-bay1 = calc_bay_usage([damage_thickness,sanity_thickness], slide_thickness);
-bay2 = calc_bay_usage([c_item_thickness,u_item_thickness], slide_thickness);
-bay3 = calc_bay_usage([spells_thickness,cond_thickness,insane_thickness], slide_thickness);
+/*
+//everything one box
+bays = [
+    calc_bay_usage([damage_thickness,sanity_thickness], slide_thickness),
+    calc_bay_usage([c_item_thickness,u_item_thickness], slide_thickness),
+    calc_bay_usage([spells_thickness,cond_thickness,insane_thickness], slide_thickness)
+];
+*/
 
-echo(bay1=bay1);
-echo(bay2=bay2);
-echo(bay3=bay3);
+//damage, sanity, condition cards box
+//box_size ~= [45,75,48]
+bays = [
+    calc_bay_usage([damage_thickness], slide_thickness),
+    calc_bay_usage([sanity_thickness], slide_thickness),
+    calc_bay_usage([cond_thickness, insane_thickness], slide_thickness)
+];
 
-echo(max_usage=max(bay1,bay2,bay3));
+/*
+//items/spells
+//box_size ~= [45,75,48]
+bays = [
+    calc_bay_usage([c_item_thickness], slide_thickness),
+    calc_bay_usage([u_item_thickness, elixir_thickness], slide_thickness),
+    calc_bay_usage([spells_thickness], slide_thickness)
+];
+*/
 
-num_divisions = calc_bay_size(max(bay1,bay2,bay3)) + 3;
-num_divisions = 3;
+num_bays=len(bays);
 
-card_size = [45, 68, 1];
-divider_size = [card_size.x+2*slide_cut, card_size.y, 1];
+echo(bays=bays);
+echo(max_usage=max(bays));
+
+num_divisions = test ? 3 : calc_bay_size(max(bays)) + 3;
+
+card_size = [test ? 20 : 45, 68, 1];
+card_size_v = [card_size.x, card_size.z, card_size.y];
+divider_size = [card_size.x+2*slide_cut, card_size.y-card_extension, slide_thickness];
+divider_size_v = [divider_size.x, divider_size.z, divider_size.y];
+
+lid_overlap = 10;
 
 box_size = [card_size.x, num_divisions*division_offset-slide_thickness, card_size.y-card_extension];
+box_size_with_inner_walls = [((box_size.x + 2 *wall_thickness) * num_bays), box_size.y+2*wall_thickness, box_size.z];
+box_size_with_outer_walls = [2 * wall_thickness + box_size_with_inner_walls.x, box_size_with_inner_walls.y+2*wall_thickness, box_size_with_inner_walls.z-lid_overlap];
 
 echo(box_size=box_size);
+echo(box_size_with_outer_walls=box_size_with_outer_walls);
 
 module make_card(size, block_size) {
-    linear_extrude(card_size.y)
-        resize([card_size.x,block_size])
-            square(1);
+    cube(card_size_v);
 }
 
-module make_divider(size, thickness) {
-    linear_extrude(size.y-card_extension)
-        resize([size.x, thickness])
-            square(1);
+module make_divider(size) {
+    cube(divider_size_v);
 }
 
-for(i=[1:1:num_bays]) {
-    translate([(i-1)*(box_size.x+2*wall_thickness),0]) {
-        difference() {
-            group() {
-                create_tile(box_size, bottom_thickness);
-                create_wall(box_size, card_size.y-card_extension, wall_thickness);
+module make_flat_pyramid(size, chamfer) {
+    points=[
+        [chamfer, chamfer, 0],  //0
+        [size.x-chamfer, chamfer,0],//1
+        [size.x-chamfer, size.y-chamfer,0],//2
+        [chamfer, size.y-chamfer,0],//3
+        [0,0,size.z],//4
+        [size.x,0,size.z],//5
+        [size.x,size.y,size.z],//6
+        [0,size.y,size.z]//7
+    ];
+
+    faces=[
+        [0,1,2,3],
+        [4,5,1,0],
+        [7,6,5,4],
+        [5,6,2,1],
+        [6,7,3,2],
+        [7,4,0,3],
+    ];
+
+    polyhedron(points,faces);
+}
+
+module make_chamfered_box(size, chamfer) {
+    cube_height = size.z-2*chamfer;
+
+    make_flat_pyramid([size.x, size.y, chamfer],chamfer);
+    translate([0,0,chamfer]) cube([size.x, size.y, cube_height]);
+    translate([size.x,0,size.z]) rotate([0,180,0])make_flat_pyramid([size.x, size.y, chamfer],chamfer);
+}
+
+
+module make_box() {
+    intersection() {
+        for(i=[1:1:num_bays]) {
+            translate([(i-1)*(box_size.x+2*wall_thickness),0]) {
+                difference() {
+                    group() {
+                        //difference() {
+                        //    translate([-wall_thickness, -wall_thickness,0])
+                        //        make_chamfered_box([box_size.x+2*wall_thickness, box_size.y+2*wall_thickness, box_size.z], .4);
+                        //        translate([0,0,bottom_thickness])
+                        //            cube([box_size.x, box_size.y, box_size.z+2]);
+                        //}
+                        create_tile(box_size, bottom_thickness);
+                        create_wall(box_size, box_size.z, wall_thickness);
+                        //create_wall([box_size.x, box_size.y], box_size.z-lid_over_lap, wall_thickness+wall_thickness);
+                    }
+
+                    for(i = [division_offset-slide_thickness:division_offset:box_size.y-slide_thickness])
+                        translate([-slide_cut,i,bottom_thickness])
+                            make_divider(divider_size);
+                }
             }
-
-            for(i = [division_offset-slide_thickness:division_offset:box_size.y-slide_thickness])
-                translate([-slide_cut,i,bottom_thickness])
-                    make_divider(divider_size, slide_thickness);
         }
+        translate([-wall_thickness, -wall_thickness, 0])
+            make_chamfered_box(box_size_with_inner_walls, chamfer_size);
     }
+
+    difference() {
+        translate([-2*wall_thickness, -2*wall_thickness,0])
+            make_chamfered_box(box_size_with_outer_walls, chamfer_size);
+        translate([-wall_thickness, -wall_thickness,bottom_thickness])
+            cube(box_size_with_inner_walls);
+    }
+
+    //translate([(box_size.x+wall_thickness)*num_bays+10,0])
+        //make_chamfered_box([divider_size.x-2*tolerance,divider_size.y,divider_size.z-2*tolerance],.4);
+    
 }
+
+make_box();
 
