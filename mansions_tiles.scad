@@ -43,6 +43,3 @@ module create_wall(w_h, wall_height, w_thickness) {
     }
 }
 
-
-
-

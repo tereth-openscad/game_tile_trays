@@ -1,3 +1,6 @@
 [submodule "helpers"]
 	path = helpers
 	url = https://github.com/tereth-openscad/helpers.git
+[submodule "scad-utils"]
+	path = scad-utils
+	url = https://github.com/tereth-openscad/scad-utils.git

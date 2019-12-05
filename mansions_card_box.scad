@@ -1,6 +1,11 @@
 
 __version__ = 4;
 
+build_dividers=true;
+build_box=false;
+build_lid=false;
+build_demo=false;
+
 test = false;
 wall_lines = 6;//should be even
 bottom_layers=test?3:10;
@@ -36,18 +41,16 @@ elixir_thickness = 5;
 function calc_bay_usage(v, thickness) = add2(v) + len(v)*slide_thickness;
 function calc_bay_size(size, last=1) = last*division_offset < size ? calc_bay_size(size,last+1) : last;
 
-/*
 //everything one box
-bays = [
+everything_bays = [
     calc_bay_usage([damage_thickness,sanity_thickness], slide_thickness),
     calc_bay_usage([c_item_thickness,u_item_thickness], slide_thickness),
     calc_bay_usage([spells_thickness,cond_thickness,insane_thickness], slide_thickness)
 ];
-*/
 
 //damage, sanity, condition cards box
 //box_size ~= [45,75,48]
-bays = [
+split_bays = [
     calc_bay_usage([damage_thickness], slide_thickness),
     calc_bay_usage([sanity_thickness], slide_thickness),
     calc_bay_usage([cond_thickness, insane_thickness], slide_thickness)
@@ -55,13 +58,16 @@ bays = [
 
 /*
 //items/spells
+//this is just here for reference
 //box_size ~= [45,75,48]
-bays = [
+items_bays = [
     calc_bay_usage([c_item_thickness], slide_thickness),
     calc_bay_usage([u_item_thickness, elixir_thickness], slide_thickness),
     calc_bay_usage([spells_thickness], slide_thickness)
 ];
 */
+
+bays=split_bays;
 
 num_bays=len(bays);
 
@@ -164,5 +170,72 @@ module make_box() {
     
 }
 
-make_box();
+if(build_box) {
+    make_box();
+}
+
+if(build_dividers) {
+    make_divider_insert();
+}
+
+if(build_lid) {
+    assert(false, "No lid designed yet!");
+}
+
+
+$fn=32;
+use <scad-utils/morphology.scad>
+
+divider_w_tol_v2 = [divider_size.x-2*tolerance, divider_size.y];
+divider_with_tolerances_v3 = concat(divider_w_tol_v2, [divider_size.z-2*tolerance]);
+
+divider_right_tab_points = [
+                            [0,0],
+                            [divider_w_tol_v2.x,0],
+                            [divider_w_tol_v2.x,divider_w_tol_v2.y+5],
+                            [divider_w_tol_v2.x/2, divider_w_tol_v2.y+5],
+                            [divider_w_tol_v2.x/2-1,divider_w_tol_v2.y],
+                            [0,divider_w_tol_v2.y]
+                           ];
+
+divider_center_tab_points = [
+                             [0,0],
+                             [divider_w_tol_v2.x,0],
+                             [divider_w_tol_v2.x, divider_w_tol_v2.y],
+                             [divider_w_tol_v2.x*2/3+2, divider_w_tol_v2.y],
+                             [divider_w_tol_v2.x*2/3, divider_w_tol_v2.y+5],
+                             [divider_w_tol_v2.x/3, divider_w_tol_v2.y+5],
+                             [divider_w_tol_v2.x/3-2,divider_w_tol_v2.y],
+                             [0,divider_w_tol_v2.y]
+                            ];
+
+
+module make_divider_shape() {
+    polygon(divider_center_tab_points);
+}
+
+module make_divider_square() {
+    resize([divider_size.x-2*tolerance, divider_size.y]) square(1); 
+}
+
+module make_divider_insert() {
+    height = divider_with_tolerances_v3.z;
+    for(i=[0:layer_thickness:height]) {
+        translate([0,0,i]) {
+            if(i < chamfer_size) {
+                linear_extrude(layer_thickness)
+                    rounding(r=.3) inset(d=chamfer_size-i) make_divider_shape();
+            }
+            else if (i > height-chamfer_size) {
+                inset_d = chamfer_size-(height-i);
+                linear_extrude(layer_thickness)
+                    rounding(r=.3)inset(d=inset_d) make_divider_shape();
+            } else {
+                linear_extrude(layer_thickness)
+                    rounding(r=.3) fillet(r=.3) make_divider_shape();
+            }
+        }
+    }
+}
+
 

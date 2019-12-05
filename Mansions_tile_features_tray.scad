@@ -1,6 +1,11 @@
 
-bottom_layers = 8;
-wall_lines = 6;
+__version__ = 13;
+//V13 - Increased bottom layers and wall lines. - adjusted magnet holes accordingly
+//V12 - Increased magnet hole size tolerance
+
+
+bottom_layers = 10;
+wall_lines = 8;
 num_tiles=7;
 
 include <mansions_tile_sizes.scad>;
@@ -109,6 +114,8 @@ module build_tile_feature_bottom() {
     }
 }
 
+
+use <scad-utils/morphology.scad>
 
 module build_tile_feature_lid() {
     translate([100,0]) {

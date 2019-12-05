@@ -7,6 +7,7 @@ layer_thickness=.2;
 tile_thickness=2.25;
 
 circle_tile_d=25;
+circle_tile_r=circle_tile_d/2;
 square_tile=26.5;
 rectangle_tile_width=20;
 rectangle_tile_height=32.5;
