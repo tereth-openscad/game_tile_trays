@@ -1,9 +1,9 @@
 
 __version__ = 4;
 
-build_dividers=true;
+build_dividers=false;
 build_box=false;
-build_lid=false;
+build_lid=true;
 build_demo=false;
 
 test = false;
@@ -170,18 +170,23 @@ module make_box() {
     
 }
 
-if(build_box) {
-    make_box();
-}
+module make_lid() {
+    
+    //card_extension
+    //lid_overlap
+    //card_size_v
 
-if(build_dividers) {
-    make_divider_insert();
-}
+    difference() {
+        cube([box_size_with_outer_walls.x, box_size_with_outer_walls.y, lid_overlap + card_extension+bottom_thickness]);
+        group() {
+            translate([wall_thickness+tolerance/2, wall_thickness+tolerance/2,-1])cube([box_size_with_inner_walls.x+tolerance, box_size_with_inner_walls.y+tolerance, lid_overlap+card_extension+1]);
+        }
+    }
+    //translate([0,0,lid_overlap+card_extension+bottom_thickness+1])
+        //import("cthulhu_logo.svg");
 
-if(build_lid) {
-    assert(false, "No lid designed yet!");
-}
 
+}
 
 $fn=32;
 use <scad-utils/morphology.scad>
@@ -238,4 +243,16 @@ module make_divider_insert() {
     }
 }
 
+if(build_box) {
+    make_box();
+}
+
+if(build_dividers) {
+    make_divider_insert();
+}
+
+if(build_lid) {
+    translate(build_box ? [-2*wall_thickness, -2*wall_thickness, box_size_with_outer_walls.z]: [0,0,0])
+        make_lid();
+}
 
