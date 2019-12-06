@@ -1,5 +1,6 @@
 
-__version__ = 13;
+__version__ = 14;
+//V14 - Fixed the bottom right hole being too small - added build flags for parts
 //V13 - Increased bottom layers and wall lines. - adjusted magnet holes accordingly
 //V12 - Increased magnet hole size tolerance
 
