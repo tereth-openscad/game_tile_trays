@@ -12,6 +12,9 @@ include <mansions_tile_sizes.scad>;
 
 $fn=50;
 
+build_box = true;
+build_lid = true;
+
 row_1_w = sq_tile*2+rec_tile_w;
 row_2_w = sq_tile + 2*rec_tile_w;
 row_offset = (row_1_w-row_2_w)/2;
@@ -53,7 +56,7 @@ hole_locations=[ [[left_vx,row1_vy],true,hsq],
                  [[column1_hx,rec_tile_h+ht],false,hrw],
                  [[column0_hx,top_hy],false,hrw],
                  [[column2_hx,top_hy],false,hrw],
-                 [[row1_right_vx,row1_vy],true,hrw],
+                 [[row1_right_vx,row1_vy],true,hsq],
                  [[column2_hx, bottom_hy],false,hsq],
                  [[column2_hx, sq_tile+ht], false,hrw],
                  //right of 4
@@ -139,6 +142,10 @@ module build_tile_feature_lid() {
 
 }
 
-build_tile_feature_bottom();
-build_tile_feature_lid();
+if(build_box) {
+    build_tile_feature_bottom();
+}
+if(build_lid) {
+    build_tile_feature_lid();
+}
 
