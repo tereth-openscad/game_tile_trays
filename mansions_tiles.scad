@@ -13,12 +13,12 @@ module gridify(width, height, percentage, line_width) {
 // w_h - vector of [width, height]
 // base_thickness - how thick the base should be
 // fill_percentage - fill percentage of the base grid (1 for no grid)
-module create_tile(w_h, base_thickness, fill_percentage=1, g_line_width=1) {
+module create_tile(w_h, base_thickness, fill_percentage=1, g_line_width=1, center=false) {
     width = w_h[0];
     height = w_h[1];
     intersection() {
         linear_extrude(base_thickness) {
-            resize([width, height])square(10);
+            resize([width, height])square(10,center=center);
         }
         if(fill_percentage < 1) {
             linear_extrude(base_thickness+1) {

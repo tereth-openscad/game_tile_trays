@@ -1,5 +1,6 @@
 
-__version__ = 5;
+__version__ = 6;
+//V6 - increase tolerances on lid and make it a little taller
 //V5 - Add lid and seal
 
 build_dividers=false;
@@ -16,6 +17,9 @@ num_tiles=0;
 include <mansions_tile_sizes.scad>
 include <mansions_tiles.scad>
 use <helpers/openscad_manual/list.scad>
+use <helpers/fillets/fillets2d.scad>;
+use <helpers/fillets/fillets3d.scad>;
+
 
 if(wall_thickness < 2) {
     echo("<h1><font color='red'>Wall Thickness Recommended to be > 2mm</font></h1>");
@@ -221,9 +225,6 @@ module make_lid() {
 
 seal_diameter=30;
 seal_thickness = 7 * layer_thickness;
-
-use <helpers/fillets/fillets2d.scad>;
-use <helpers/fillets/fillets3d.scad>;
 
 module make_lid_seal() {
     topBottomFillet(b=0,t=seal_thickness, r=chamfer_size, s=chamfer_size/layer_thickness) {
