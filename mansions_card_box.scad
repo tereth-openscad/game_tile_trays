@@ -1,9 +1,11 @@
 
-__version__ = 4;
+__version__ = 5;
+//V5 - Add lid and seal
 
 build_dividers=false;
 build_box=false;
 build_lid=true;
+build_lid_seal=false;
 build_demo=false;
 
 test = false;
@@ -23,6 +25,7 @@ card_extension = test ? 60 : 20;
 division_offset = 5+slide_thickness;
 
 tolerance = .2;
+circle_tolerance = .3;
 chamfer_size = .4;
 
 assert(tolerance*2 < slide_cut, "Slide cut doesn't allow for appropriate tolerances");
@@ -176,19 +179,51 @@ module make_lid() {
     //lid_overlap
     //card_size_v
 
-    difference() {
-        cube([box_size_with_outer_walls.x, box_size_with_outer_walls.y, lid_overlap + card_extension+bottom_thickness]);
-        group() {
-            translate([wall_thickness+tolerance/2, wall_thickness+tolerance/2,-1])cube([box_size_with_inner_walls.x+tolerance, box_size_with_inner_walls.y+tolerance, lid_overlap+card_extension+1]);
+    topBottomFillet(b=0,t=lid_overlap+card_extension+bottom_thickness, r=chamfer_size, s=chamfer_size/layer_thickness) {
+        difference() {
+            difference() {
+                linear_extrude(lid_overlap+card_extension+bottom_thickness)
+                    rounding2d(chamfer_size)fillet2d(chamfer_size)
+                        resize([box_size_with_outer_walls.x, box_size_with_outer_walls.y])square(1);
+                group() {
+                    translate([wall_thickness+tolerance/2, wall_thickness+tolerance/2,-1])cube([box_size_with_inner_walls.x+tolerance, box_size_with_inner_walls.y+tolerance, lid_overlap+card_extension+1]);
+                }
+            }
+
+            translate([box_size_with_outer_walls.x/2,box_size_with_outer_walls.y/2,lid_overlap+card_extension+bottom_thickness/2]) {
+                linear_extrude(5)
+                    circle(seal_diameter+circle_tolerance);
+            }
         }
     }
-    //translate([0,0,lid_overlap+card_extension+bottom_thickness+1])
-        //import("cthulhu_logo.svg");
 
-
+    //translate([box_size_with_outer_walls.x/2,box_size_with_outer_walls.y/2,lid_overlap+card_extension+bottom_thickness/2])
+        //make_lid_seal();
 }
 
-$fn=32;
+seal_diameter=30;
+seal_thickness = 7 * layer_thickness;
+
+use <helpers/fillets/fillets2d.scad>;
+use <helpers/fillets/fillets3d.scad>;
+
+module make_lid_seal() {
+    topBottomFillet(b=0,t=seal_thickness, r=chamfer_size, s=chamfer_size/layer_thickness) {
+        difference() {
+            linear_extrude(height = seal_thickness)
+                circle(seal_diameter);
+            translate([0,0,3*layer_thickness])
+                linear_extrude(height = seal_thickness+.1)
+                    circle(seal_diameter-wall_thickness);
+        }
+    }
+    linear_extrude(height = bottom_thickness/2+2*layer_thickness)
+        scale([.4,.4])
+            import("cthulhu_logo_2.svg", center=true);
+}
+
+
+$fn=100;
 use <scad-utils/morphology.scad>
 
 divider_w_tol_v2 = [divider_size.x-2*tolerance, divider_size.y];
@@ -252,7 +287,15 @@ if(build_dividers) {
 }
 
 if(build_lid) {
-    translate(build_box ? [-2*wall_thickness, -2*wall_thickness, box_size_with_outer_walls.z]: [0,0,0])
+    translate(build_box ? [-2*wall_thickness, -2*wall_thickness, box_size_with_outer_walls.z]: [0,0,0]) {
         make_lid();
+        if(build_lid_seal)
+            translate([box_size_with_outer_walls.x/2,box_size_with_outer_walls.y/2,lid_overlap+card_extension+bottom_thickness/2])
+                make_lid_seal();
+    }
+}
+
+if(build_lid_seal && !build_lid) {
+    make_lid_seal();
 }
 
