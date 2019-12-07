@@ -121,6 +121,14 @@ module build_tile_feature_bottom() {
 
 use <scad-utils/morphology.scad>
 
+
+
+module create_lid_walls() {
+    resize([hsq, wall_thickness]) square(1);
+    
+
+}
+
 module build_tile_feature_lid() {
     translate([100,0]) {
         difference() {
@@ -130,6 +138,7 @@ module build_tile_feature_lid() {
                     create_base(bottom_thickness, 1);
                     linear_extrude(bottom_thickness)
                         translate(box_center) square(50,center=true);
+                    create_lid_walls();
                 }
                 cut_magnet_holes(bottom_thickness);
             }

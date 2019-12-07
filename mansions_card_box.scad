@@ -17,6 +17,10 @@ include <mansions_tile_sizes.scad>
 include <mansions_tiles.scad>
 use <helpers/openscad_manual/list.scad>
 
+if(wall_thickness < 2) {
+    echo("<h1><font color='red'>Wall Thickness Recommended to be > 2mm</font></h1>");
+}
+
 
 slide_cut = min(3*line_width, wall_lines * line_width / 2);
 
@@ -173,32 +177,46 @@ module make_box() {
     
 }
 
+lid_extra = 3;
+inner_lid_height = lid_overlap + card_extension + lid_extra;
+inner_lid_cut_extra = 1;
+inner_lid_trans = [wall_thickness-tolerance/2, 
+                   wall_thickness-tolerance/2, 
+                   -inner_lid_cut_extra];
+inner_lid_vec = [box_size_with_inner_walls.x + 1.5*tolerance, 
+                 box_size_with_inner_walls.y + 1.5*tolerance, 
+                 inner_lid_height+inner_lid_cut_extra];
+
 module make_lid() {
     
     //card_extension
     //lid_overlap
     //card_size_v
 
-    topBottomFillet(b=0,t=lid_overlap+card_extension+bottom_thickness, r=chamfer_size, s=chamfer_size/layer_thickness) {
+    topBottomFillet(b=0,t=inner_lid_height+bottom_thickness, r=chamfer_size, s=chamfer_size/layer_thickness) {
         difference() {
             difference() {
-                linear_extrude(lid_overlap+card_extension+bottom_thickness)
+                linear_extrude(inner_lid_height + bottom_thickness)
                     rounding2d(chamfer_size)fillet2d(chamfer_size)
-                        resize([box_size_with_outer_walls.x, box_size_with_outer_walls.y])square(1);
+                        resize([box_size_with_outer_walls.x, 
+                                box_size_with_outer_walls.y])
+                            square(1);
                 group() {
-                    translate([wall_thickness+tolerance/2, wall_thickness+tolerance/2,-1])cube([box_size_with_inner_walls.x+tolerance, box_size_with_inner_walls.y+tolerance, lid_overlap+card_extension+1]);
+                    //echo(inner_lid_trans=inner_lid_trans);
+                    //echo(inner_lid_vec=inner_lid_vec);
+                    translate(inner_lid_trans)
+                        cube(inner_lid_vec);
                 }
             }
 
-            translate([box_size_with_outer_walls.x/2,box_size_with_outer_walls.y/2,lid_overlap+card_extension+bottom_thickness/2]) {
+            translate([box_size_with_outer_walls.x/2,
+                       box_size_with_outer_walls.y/2,
+                       inner_lid_height+bottom_thickness/2]) {
                 linear_extrude(5)
                     circle(seal_diameter+circle_tolerance);
             }
         }
     }
-
-    //translate([box_size_with_outer_walls.x/2,box_size_with_outer_walls.y/2,lid_overlap+card_extension+bottom_thickness/2])
-        //make_lid_seal();
 }
 
 seal_diameter=30;
