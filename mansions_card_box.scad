@@ -25,7 +25,6 @@ if(wall_thickness < 2) {
     echo("<h1><font color='red'>Wall Thickness Recommended to be > 2mm</font></h1>");
 }
 
-
 slide_cut = min(3*line_width, wall_lines * line_width / 2);
 
 slide_thickness = 2;

@@ -1,5 +1,6 @@
 
-__version__ = 14;
+__version__ = 15;
+//V15 - Added pop-outs to the lid to help secure it. Fixed a gap in the left magnet hole
 //V14 - Fixed the bottom right hole being too small - added build flags for parts
 //V13 - Increased bottom layers and wall lines. - adjusted magnet holes accordingly
 //V12 - Increased magnet hole size tolerance
@@ -15,7 +16,7 @@ use <helpers/fillets/fillets3d.scad>;
 
 $fn=50;
 
-build_box = false;
+build_box = true;
 build_lid = true;
 do_fillets = 1;
 
@@ -123,23 +124,11 @@ tolerance=.2;
 lid_pop_in = (num_tiles-2) < 4 ? 1 : 2;
 
 module create_lid_walls() {
-    topFillet(t = box_height-1, r = .4, s = 2, e = do_fillets)
-        linear_extrude(box_height-1)
-            translate(hole_locations[1][0])
-                resize([hole_locations[1][2]-1, wall_thickness]) 
-                    square(1,center=true);
-
-    topFillet(t = box_height-1, r = .4, s = 2, e = do_fillets)
-        linear_extrude(box_height-1)
-            translate(hole_locations[15][0])
-                resize([hole_locations[15][2]-1, wall_thickness]) 
-                    square(1,center=true);
-
     for(i=[0,2,4]) {
         tile = tile_translations[i];
         topFillet(t = bottom_thickness+lid_pop_in*tile_thickness, r = .4, s = 2, e = do_fillets)
             translate([tile[0].x+tile[1].x/2, tile[0].y+tile[1].y/2]) {
-                create_tile([tile[1].x-tolerance, tile[1].y-tolerance], bottom_thickness+lid_pop_in*tile_thickness,center=true);
+                create_tile([tile[1].x-2*tolerance, tile[1].y-2*tolerance], bottom_thickness+lid_pop_in*tile_thickness,center=true);
         }
     }
 }

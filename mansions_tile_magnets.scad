@@ -1,5 +1,5 @@
 
-magnet_diameter=5+.2;
+magnet_diameter=5+.3;
 magnet_radius=magnet_diameter/2;
 magnet_thickness=1;
 
@@ -16,8 +16,8 @@ magnet_circle_size = max(wall_thickness*2, magnet_diameter+row_offset/2);
 magnet_left_middle_cut_trans=min(row_offset-magnet_radius-.1,0);
 magnet_square_size = [wall_thickness+sq_rec_diff, magnet_diameter+1];
 magnet_bases_holes = [
-                        [[-(row_offset+wall_thickness)/2, sq_tile+wall_thickness], [magnet_left_middle_cut_trans,sq_tile+magnet_radius+1]],
-                        [[row_offset+row_2_w+3*wall_thickness,sq_tile+wall_thickness], [row_offset+row_2_w+3*wall_thickness,sq_tile+magnet_radius+1]],
+                        [[-(row_offset+wall_thickness)/2+.025, sq_tile+wall_thickness], [magnet_left_middle_cut_trans,sq_tile+magnet_radius+1]],
+                        [[row_offset+row_2_w+3*wall_thickness,sq_tile+wall_thickness], [row_offset+row_2_w+3*wall_thickness,sq_tile+magnet_radius]],
                         [[], [-magnet_radius, -magnet_radius]]
                      ];
 
