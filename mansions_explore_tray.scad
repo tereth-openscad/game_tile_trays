@@ -1,11 +1,5 @@
 
-__version__ = 16;
-//V16 - Fixed an issue with the magnet holes not lining up properly...
-//V15 - Added pop-outs to the lid to help secure it. Fixed a gap in the left magnet hole
-//V14 - Fixed the bottom right hole being too small - added build flags for parts
-//V13 - Increased bottom layers and wall lines. - adjusted magnet holes accordingly
-//V12 - Increased magnet hole size tolerance
-
+__version__ = 1;
 
 bottom_layers = 10;
 wall_lines = 9;
@@ -19,7 +13,17 @@ $fn=50;
 
 build_box = true;
 build_lid = true;
-do_fillets = 1;
+do_fillets = 0;
+
+
+if(build_box) {
+    build_tile_feature_bottom();
+}
+
+if(build_lid) {
+    build_tile_feature_lid();
+}
+
 
 row_1_w = sq_tile*2+rec_tile_w;
 row_2_w = sq_tile + 2*rec_tile_w;
@@ -177,13 +181,5 @@ module build_tile_feature_lid() {
         }
     }
 
-}
-
-if(build_box) {
-    build_tile_feature_bottom();
-}
-
-if(build_lid) {
-    build_tile_feature_lid();
 }
 

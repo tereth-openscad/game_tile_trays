@@ -1,12 +1,13 @@
 
-__version__ = 6;
+__version__ = 7;
+//V7 - Updates to the seal
 //V6 - increase tolerances on lid and make it a little taller
 //V5 - Add lid and seal
 
 build_dividers=false;
 build_box=false;
-build_lid=true;
-build_lid_seal=false;
+build_lid=false;
+build_lid_seal=true;
 build_demo=false;
 
 test = false;
@@ -223,23 +224,24 @@ module make_lid() {
 }
 
 seal_diameter=30;
-seal_thickness = 7 * layer_thickness;
+seal_rim_thickness = 7 * layer_thickness;
+seal_bottom_thickness = 4 * layer_thickness;
+seal_design_thickness = 10 * layer_thickness;
 
 module make_lid_seal() {
-    topBottomFillet(b=0,t=seal_thickness, r=chamfer_size, s=chamfer_size/layer_thickness) {
+    topBottomFillet(b=0,t=seal_rim_thickness, r=chamfer_size, s=chamfer_size/layer_thickness) {
         difference() {
-            linear_extrude(height = seal_thickness)
+            linear_extrude(height = seal_rim_thickness)
                 circle(seal_diameter);
-            translate([0,0,3*layer_thickness])
-                linear_extrude(height = seal_thickness+.1)
+            translate([0,0,seal_rim_thickness-seal_bottom_thickness])
+                linear_extrude(height = seal_rim_thickness+.1)
                     circle(seal_diameter-wall_thickness);
         }
     }
-    linear_extrude(height = bottom_thickness/2+2*layer_thickness)
+    linear_extrude(seal_design_thickness)
         scale([.4,.4])
             import("cthulhu_logo_2.svg", center=true);
 }
-
 
 $fn=100;
 use <scad-utils/morphology.scad>
