@@ -6,14 +6,16 @@ layer_thickness=.2;
 //tile parameters
 tile_thickness=2.25;
 
-circle_tile_d=25;
-circle_tile_r=circle_tile_d/2;
 square_tile=26.5;
+
+circle_tile_d=square_tile;
+circle_tile_r=circle_tile_d/2;
+
 rectangle_tile_width=20;
 rectangle_tile_height=32.5;
 
 //tolerance values
-height_slop=.4;
+height_slop=1.2;
 
 //calculated box parameters
 wall_thickness=wall_lines*line_width;

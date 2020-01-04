@@ -1,185 +1,259 @@
 
-__version__ = 1;
+__version__ = 7;
+
+build_box = true;
+build_lid = false;
+big_box = true;
+do_fillets = 1;
 
 bottom_layers = 10;
-wall_lines = 9;
+wall_lines = 5;
 num_tiles=7;
 
 include <mansions_tile_sizes.scad>;
 use <helpers/fillets/fillets2d.scad>;
 use <helpers/fillets/fillets3d.scad>;
+use <helpers/openscad_manual/list.scad>;
 
-$fn=50;
-
-build_box = true;
-build_lid = true;
-do_fillets = 0;
-
-
-if(build_box) {
-    build_tile_feature_bottom();
-}
-
-if(build_lid) {
-    build_tile_feature_lid();
-}
-
+use <scad-utils/morphology.scad>
 
 row_1_w = sq_tile*2+rec_tile_w;
 row_2_w = sq_tile + 2*rec_tile_w;
 row_offset = (row_1_w-row_2_w)/2;
 
-tile_translations = [
-                     [[0,0],sq_tile_vec], //bottom left
-                     [[sq_tile+wall_thickness,0],rec_tile_vec],
-                     [[sq_tile+2*wall_thickness+rec_tile_w,0],sq_tile_vec],
-                     [[row_offset+0,sq_tile+wall_thickness],rec_tile_vec],
-                     [[row_offset+rec_tile_w+wall_thickness,rec_tile_h+wall_thickness],sq_tile_vec],
-                     [[row_offset+rec_tile_w+2*wall_thickness+sq_tile,sq_tile+wall_thickness],rec_tile_vec]
-                    ];
-
 sq_rec_diff = (sq_tile-(rec_tile_w+2*wall_thickness))/2;
-
-box_center = [(row_1_w+2*wall_thickness)/2, (sq_tile + rec_tile_h+1*wall_thickness)/2];
-
-/////// ---- Holes ---- ///////
-column0_hx = hsq;
-column1_hx = sq_tile+wall_thickness+hrw;
-column2_hx = 3*hsq + rec_tile_w + 2*wall_thickness;
-
-row0_vy = rec_tile_h+hsq+wall_thickness;
-row1_vy = hsq;
-
-top_hy = sq_tile+wall_thickness+rec_tile_h+ht;
-bottom_hy = -ht;
-left_vx = -ht;
-row1_right_vx = sq_tile*2 + rec_tile_w + 2*wall_thickness + ht;
-
-// [[w, h], is_vert, diameter]
-//top-left (0) to bottom right (16)
-hole_locations=[ 
-                 [[column0_hx,top_hy],false,hrw], //0
-                 [[column1_hx,top_hy], false,hsq], //1
-                 [[column2_hx,top_hy],false,hrw], //2
-                 [[left_vx+row_offset,row0_vy],true,hsq],// 3
-                 [[row_offset+rec_tile_w+ht, row0_vy],true,hsq],// 4
-                 [[row_offset+rec_tile_w+wall_thickness+sq_tile+ht, row0_vy],true,hsq], // 5
-                 [[row_offset+2*rec_tile_w+2*wall_thickness+sq_tile+ht, row0_vy],true,hsq], // 6
-                 [[column0_hx,sq_tile+ht],false,hrw],// 7
-                 [[column2_hx, sq_tile+ht], false,hrw],// 8
-                 [[column1_hx,rec_tile_h+ht],false,hrw],// 9
-                 [[left_vx,row1_vy],true,hsq], // 10
-                 [[sq_tile+ht,row1_vy],true,hsq], // 11
-                 [[sq_tile+wall_thickness+rec_tile_w+ht, row1_vy],true,hsq],// 12
-                 [[row1_right_vx,row1_vy],true,hsq], // 13
-                 [[column0_hx,bottom_hy],false,hsq], //14
-                 [[column1_hx,bottom_hy],false,hrw], //15
-                 [[column2_hx, bottom_hy],false,hsq], //16
-               ];
-/////// ---- Holes ---- ///////
-
-lid_text = "TILES";
 
 include <mansions_tile_features_tray_holes.scad>;
 include <mansions_tile_magnets.scad>;
 use <mansions_tiles.scad>;
-use <helpers/fillets/fillets2d.scad>
-use <helpers/fillets/fillets3d.scad>
-
-wall_thickness_v = [wall_thickness,wall_thickness];
-
-module create_base(wall_height, fill_percentage=1) {
-    for(tile=tile_translations) {
-        translate(tile[0]-wall_thickness_v) {
-            create_tile(tile[1]+2*wall_thickness_v, bottom_thickness);
-        }
-    }
-}
-
-module create_walls(wall_height) {
-    for(tile=tile_translations) {
-        translate(tile[0])
-            create_wall(tile[1], wall_height, wall_thickness);
-    }
-}
-
-module build_tile_feature_bottom() {
-    difference() {
-        group() {
-            difference() {
-                bottomFillet(b=0,r=.4,s=2,e=1)
-                group() {
-                    linear_extrude(bottom_thickness)
-                        rounding(r=1)
-                        create_base(box_height, base_fill_percentage);
-                    linear_extrude(box_height) {
-                        rounding(r=1)
-                            create_walls(box_height);
-                        build_magnet_bases(box_height);
-                    }
-                }
-                group() {
-                    if(!hole_border) {
-                        topBottomFillet(b=0,t=box_height,r=.4,s=2, e=do_fillets, inverse=true)
-                            create_holes(hole_locations, box_height+1, wall_thickness);
-                    } else {
-                        translate([0,0,bottom_thickness])
-                            create_holes(hole_locations, box_height+1, wall_thickness);
-
-                        create_holes(hole_locations, bottom_thickness, wall_thickness, 2);
-                    }
-                }
-            }
-        }
-
-        cut_magnet_holes(box_height);
-    }
-}
-
-
-use <scad-utils/morphology.scad>
 
 tolerance=.2;
 
-lid_pop_in = (num_tiles-2) < 4 ? 1 : 2;
+$fn=100;
 
-lid_pop_in_tol = 6*tolerance;
-module create_lid_pop_in() {
-    for(i=[0,2,4]) {
-        tile = tile_translations[i];
-        topFillet(t = bottom_thickness+lid_pop_in*tile_thickness, r = .4, s = 2, e = do_fillets)
-            translate([tile[0].x+tile[1].x/2, tile[0].y+tile[1].y/2]) {
-                linear_extrude(bottom_thickness+lid_pop_in*tile_thickness) {
-                    create_tile([tile[1].x-lid_pop_in_tol, tile[1].y-lid_pop_in_tol], bottom_thickness+lid_pop_in*tile_thickness,center=true);
+keys=4;
+fire_tokens=big_box ? 38 : 30;
+restraint_tokens=20;
+rift_tokens=43;
+search_tokens=16;
+explore_tokens=16;
+
+big_token_list = [fire_tokens, restraint_tokens, rift_tokens, search_tokens, explore_tokens];
+small_token_list = [fire_tokens, search_tokens, explore_tokens];
+token_list = big_box ? big_token_list : small_token_list;
+
+tiles_per_column=max(token_list)+1;
+
+function calculate_tile_depth(tiles) = tiles * tile_thickness + height_slop;
+
+use <MCAD/regular_shapes.scad>
+use <MCAD/math.scad>
+
+big_box_columns = [ 
+            [sq_tile, tiles_per_column, wall_thickness + sq_tile / 2, "square"], //fire
+            [sq_tile, tiles_per_column, wall_thickness*2+sq_tile*3/2, "square"],//rift
+            [sq_tile, restraint_tokens, wall_thickness*3+sq_tile*5/2, "square"],//restraint
+            [circle_tile_d,search_tokens, wall_thickness*4+sq_tile*3+circle_tile_r, "circle"], //search
+            [circle_tile_d,explore_tokens, wall_thickness*5+sq_tile*3+circle_tile_r*3, "circle"], //explore
+          ];
+
+small_box_columns = [ 
+            [sq_tile, tiles_per_column, wall_thickness + sq_tile / 2, "square"], //fire
+            //[sq_tile, tiles_per_column, wall_thickness*2+sq_tile*3/2, "square"],//rift
+            //[sq_tile, restraint_tokens, wall_thickness*3+sq_tile*5/2, "square"],//restraint
+            [circle_tile_d,search_tokens, wall_thickness*2+sq_tile*1+circle_tile_r, "circle"], //search
+            [circle_tile_d,explore_tokens, wall_thickness*3+sq_tile*1+circle_tile_r*3, "circle"], //explore
+          ];
+
+columns = big_box ? big_box_columns : small_box_columns;
+
+num_columns=len(columns);
+box_width = add([for(i=columns) i[0]]);
+min_column_depth = calculate_tile_depth(big_box ? restraint_tokens : search_tokens);
+
+box_size = [
+            (wall_thickness * (2 + (num_columns - 1))) + box_width,
+            calculate_tile_depth(tiles_per_column) + (wall_thickness * 2),
+            square_tile + bottom_thickness + .4
+           ];
+
+if(build_box) {
+    build_explore_bottom();
+}
+
+if(build_lid) {
+    translate([box_size.x + 10,0,0])
+        build_explore_lid();
+}
+
+module base_box(size) {
+    linear_extrude(size.z)
+        rounding2d(2)
+            fillet2d(2)
+                group() {
+                    square([size.x, size.y]);
+
+                    //magnet posts
+                    translate([0,0]+[-mag_trans,-mag_trans])
+                        circle(r=magnet_radius+1);
+                    translate([size.x,0] + [mag_trans,-mag_trans])
+                        circle(r=magnet_radius+1);
+                    translate([size.x,size.y] + [mag_trans,mag_trans])
+                        circle(r=magnet_radius+1);
+                    translate([0,size.y] + [-mag_trans,mag_trans])
+                        circle(r=magnet_radius+1);
                 }
+}
+
+use <helpers/bases.scad>
+
+remaining_box_trans = [ big_box ? 2 * sq_tile + 3 * wall_thickness : sq_tile + 2*wall_thickness, 
+                        min_column_depth + wall_thickness*2, 
+                        bottom_thickness];
+remaining_box = [
+                  box_size.x-(remaining_box_trans.x+wall_thickness),
+                  box_size.y-(remaining_box_trans.y+wall_thickness),
+                  sq_tile+1
+                ];
+
+
+module build_explore_bottom() {
+    bottomFillet(b=0, r=.2,s=1,e=do_fillets) {
+        group () {
+            difference() {
+                difference() {
+                    base_box(box_size);
+                    translate([wall_thickness, wall_thickness,-.1])
+                        linear_extrude(box_size.z)
+                            triangle_base_cut([square_tile, box_size.y-2*wall_thickness], 1, 4, wall_thickness);
+                    if(big_box) {
+                        translate([wall_thickness*2 + square_tile, wall_thickness,-.1])
+                            linear_extrude(box_size.z)
+                                triangle_base_cut([square_tile, box_size.y-2*wall_thickness], 1, 4, wall_thickness);
+                        translate([columns[2][2], calculate_tile_depth(columns[2][1])/2+wall_thickness,-.1])
+                            linear_extrude(box_size.z)
+                                triangle_base_cut([square_tile, calculate_tile_depth(columns[2][1])], 1, 2, wall_thickness, center=true);
+
+                        translate([wall_thickness, wall_thickness, box_size.z*3/4])
+                            cube([columns[0][0]+columns[1][0]+wall_thickness, box_size.y-2*wall_thickness, box_size.z]);
+
+                        #translate([columns[0][0]+columns[1][0]+2*wall_thickness, wall_thickness, box_size.z*3/4])
+                            cube([columns[2][0]+columns[3][0]+columns[4][0]+3*wall_thickness, calculate_tile_depth(columns[2][1]), box_size.z]);
+                        }
+                            
+                    translate([0,0,box_size.z-magnet_thickness]) {
+                        translate([0,0]+[-mag_trans,-mag_trans])
+                            cylinder(r=magnet_radius, h=magnet_thickness+1);
+                        translate([box_size.x,0] + [mag_trans,-mag_trans])
+                            cylinder(r=magnet_radius, h=magnet_thickness+1);
+                        translate([box_size.x,box_size.y] + [mag_trans,mag_trans])
+                            cylinder(r=magnet_radius, h=magnet_thickness+1);
+                        translate([0,box_size.y] + [-mag_trans,mag_trans])
+                            cylinder(r=magnet_radius, h=magnet_thickness+1);
+                    }
+                }
+
+                for(item=columns) {
+                    depth=calculate_tile_depth(item[1]);
+                    translate([item[2], wall_thickness+depth/2, box_size.z-item[0]/2])
+                        build_tile_cut(shape=item[3], size=[item[0], depth, item[0]]);
+
+                    translate([item[2], wall_thickness/2, box_size.z])
+                        rotate([90,0,0])
+                            linear_extrude(wall_thickness+1, center=true)
+                                circle(r=item[0]/2-2);
+                                //regular_polygon(12,item[0]/2);
+                }
+
+                translate(remaining_box_trans+(remaining_box/2)) {
+                    rounded_bottom(circle_tile_r, remaining_box);
+                }
+
+            }
         }
     }
 }
 
-module build_tile_feature_lid() {
-    translate([100,0]) {
+mag_trans = sqrt(2)/2*(magnet_radius+wall_thickness/2-sqrt(2)*wall_thickness);
+
+lid_text="EXPLORE";
+module build_explore_lid() {
+    bottomFillet(b=0,r=.2,s=1,e=do_fillets) {
         difference() {
-            difference() {
-                bottomFillet(b=0,r=.4,s=2,e=1)
-                    group() {
-                        linear_extrude(bottom_thickness) {
-                            rounding(r=1)
-                                create_base(bottom_thickness, 1);
-                            build_magnet_bases(bottom_thickness);
-                            translate(box_center) 
-                                square(50,center=true);
-                        }
-                        create_lid_pop_in();
-                    }
-                cut_magnet_holes(bottom_thickness);
+            group () {
+                base_box([box_size.x, box_size.y, bottom_thickness]);
+                //small remaining box inset
+                topFillet(t=bottom_thickness+2, r=.6,s=3,e=do_fillets)
+                    translate([wall_thickness+.2, box_size.y-(remaining_box.y-.2+wall_thickness),bottom_thickness])
+                        linear_extrude(2)
+                            rounding2d(2)
+                                fillet2d(2)
+                                    square([remaining_box.x-.4, remaining_box.y-.4]);
             }
 
-            linear_extrude(.2+.1)
-                translate(concat(box_center,[-0.1]))
-                    rotate(a=[0,180,0])
-                        text(lid_text,valign="center", halign="center");
+            //cut out magnet holes
+            translate([0,0,bottom_thickness-magnet_thickness]) {
+                translate([0,0]+[-mag_trans,-mag_trans])
+                    cylinder(r=magnet_radius, h=magnet_thickness+1);
+                translate([box_size.x,0] + [mag_trans,-mag_trans])
+                    cylinder(r=magnet_radius, h=magnet_thickness+1);
+                translate([box_size.x,box_size.y] + [mag_trans,mag_trans])
+                    cylinder(r=magnet_radius, h=magnet_thickness+1);
+                translate([0,box_size.y] + [-mag_trans,mag_trans])
+                    cylinder(r=magnet_radius, h=magnet_thickness+1);
+            }
+
+            translate([0,0,-.1])
+                linear_extrude(.2+.1)
+                    translate([box_size.x/2,box_size.y/2])
+                        rotate(a=[0,180,-10])
+                            text(lid_text,font="Elric",valign="center", halign="center");
+                            
         }
     }
+}
 
+module rounded_bottom(rbottom, size) {
+    assert(size.z >= rbottom, "z size must be 2x rbottom")
+    rotate([90,0,0])
+        linear_extrude(size.y,center=true)
+            hull() {
+                square_size = 1;
+                x_dist_c = (size.x - (rbottom*2))/2;
+                z_dist_c = (size.z - (rbottom*2))/2;
+                x_dist_s = (size.x - square_size)/2;
+                z_dist_s = (size.z - square_size)/2;
+                translate([-x_dist_c,-z_dist_c,0])
+                    difference() {
+                        circle(r=rbottom);
+                        translate([0,rbottom/2])
+                            resize([2*rbottom, rbottom])square(1,center=true);
+                    }
+                translate([x_dist_s,z_dist_s,0])
+                    square(square_size,center=true);
+                translate([x_dist_c,-z_dist_c,0])
+                    difference() {
+                        circle(r=rbottom);
+                        translate([0,rbottom/2])
+                            resize([2*rbottom, rbottom])square(1,center=true);
+                    }
+                translate([-x_dist_s,z_dist_s,0])
+                    square(square_size,center=true);
+            }
+}
+
+module build_tile_cut(shape="square", size) {
+    if(shape=="square") {
+        cube([size.x,size.y,size.z+1], center=true);
+    } else if(shape=="circle") {
+        rotate([90,0,0]) {
+            cylinder(h=size.y, d=size.x, center=true);
+        }
+        translate([0,0,size.x/2])
+            cube([size.x,size.y,size.x],center=true);
+
+    } else {
+        assert("Unknown shape");
+    }
 }
 
