@@ -1,8 +1,8 @@
 
 __version__ = 7;
 
-build_box = true;
-build_lid = false;
+build_box = false;
+build_lid = true;
 big_box = true;
 do_fillets = 1;
 
@@ -118,58 +118,58 @@ remaining_box = [
 
 
 module build_explore_bottom() {
-    bottomFillet(b=0, r=.2,s=1,e=do_fillets) {
-        group () {
+    group () {
+        difference() {
             difference() {
-                difference() {
+                bottomFillet(b=0, r=.2,s=1,e=do_fillets) {
                     base_box(box_size);
-                    translate([wall_thickness, wall_thickness,-.1])
+                }
+                translate([wall_thickness, wall_thickness,-.1])
+                    linear_extrude(box_size.z)
+                        triangle_base_cut([square_tile, box_size.y-2*wall_thickness], 1, 4, wall_thickness);
+                if(big_box) {
+                    translate([wall_thickness*2 + square_tile, wall_thickness,-.1])
                         linear_extrude(box_size.z)
                             triangle_base_cut([square_tile, box_size.y-2*wall_thickness], 1, 4, wall_thickness);
-                    if(big_box) {
-                        translate([wall_thickness*2 + square_tile, wall_thickness,-.1])
-                            linear_extrude(box_size.z)
-                                triangle_base_cut([square_tile, box_size.y-2*wall_thickness], 1, 4, wall_thickness);
-                        translate([columns[2][2], calculate_tile_depth(columns[2][1])/2+wall_thickness,-.1])
-                            linear_extrude(box_size.z)
-                                triangle_base_cut([square_tile, calculate_tile_depth(columns[2][1])], 1, 2, wall_thickness, center=true);
 
-                        translate([wall_thickness, wall_thickness, box_size.z*3/4])
-                            cube([columns[0][0]+columns[1][0]+wall_thickness, box_size.y-2*wall_thickness, box_size.z]);
+                    translate([columns[2][2], calculate_tile_depth(columns[2][1])/2+wall_thickness,-.1])
+                        linear_extrude(box_size.z)
+                            triangle_base_cut([square_tile, calculate_tile_depth(columns[2][1])], 1, 2, wall_thickness, center=true);
 
-                        #translate([columns[0][0]+columns[1][0]+2*wall_thickness, wall_thickness, box_size.z*3/4])
-                            cube([columns[2][0]+columns[3][0]+columns[4][0]+3*wall_thickness, calculate_tile_depth(columns[2][1]), box_size.z]);
-                        }
-                            
-                    translate([0,0,box_size.z-magnet_thickness]) {
-                        translate([0,0]+[-mag_trans,-mag_trans])
-                            cylinder(r=magnet_radius, h=magnet_thickness+1);
-                        translate([box_size.x,0] + [mag_trans,-mag_trans])
-                            cylinder(r=magnet_radius, h=magnet_thickness+1);
-                        translate([box_size.x,box_size.y] + [mag_trans,mag_trans])
-                            cylinder(r=magnet_radius, h=magnet_thickness+1);
-                        translate([0,box_size.y] + [-mag_trans,mag_trans])
-                            cylinder(r=magnet_radius, h=magnet_thickness+1);
-                    }
+                    translate([wall_thickness, wall_thickness, box_size.z*3/4])
+                        cube([columns[0][0]+columns[1][0], box_size.y-2*wall_thickness, box_size.z]);
+
+                    translate([columns[0][0]+columns[1][0]+2*wall_thickness, wall_thickness, box_size.z*3/4])
+                        cube([columns[2][0]+columns[3][0]+columns[4][0]+3*wall_thickness, calculate_tile_depth(columns[2][1]), box_size.z]);
                 }
-
-                for(item=columns) {
-                    depth=calculate_tile_depth(item[1]);
-                    translate([item[2], wall_thickness+depth/2, box_size.z-item[0]/2])
-                        build_tile_cut(shape=item[3], size=[item[0], depth, item[0]]);
-
-                    translate([item[2], wall_thickness/2, box_size.z])
-                        rotate([90,0,0])
-                            linear_extrude(wall_thickness+1, center=true)
-                                circle(r=item[0]/2-2);
-                                //regular_polygon(12,item[0]/2);
+                        
+                translate([0,0,box_size.z-magnet_thickness]) {
+                    translate([0,0]+[-mag_trans,-mag_trans])
+                        cylinder(r=magnet_radius, h=magnet_thickness+1);
+                    translate([box_size.x,0] + [mag_trans,-mag_trans])
+                        cylinder(r=magnet_radius, h=magnet_thickness+1);
+                    translate([box_size.x,box_size.y] + [mag_trans,mag_trans])
+                        cylinder(r=magnet_radius, h=magnet_thickness+1);
+                    translate([0,box_size.y] + [-mag_trans,mag_trans])
+                        cylinder(r=magnet_radius, h=magnet_thickness+1);
                 }
-
-                translate(remaining_box_trans+(remaining_box/2)) {
-                    rounded_bottom(circle_tile_r, remaining_box);
-                }
-
             }
+
+            for(item=columns) {
+                depth=calculate_tile_depth(item[1]);
+                translate([item[2], wall_thickness+depth/2, box_size.z-item[0]/2])
+                    build_tile_cut(shape=item[3], size=[item[0], depth, item[0]]);
+
+                translate([item[2], wall_thickness/2, box_size.z])
+                    rotate([90,0,0])
+                        linear_extrude(wall_thickness+1, center=true)
+                            circle(r=item[0]/2-2);
+            }
+
+            translate(remaining_box_trans+(remaining_box/2)) {
+                rounded_bottom(circle_tile_r, remaining_box);
+            }
+
         }
     }
 }
@@ -178,38 +178,38 @@ mag_trans = sqrt(2)/2*(magnet_radius+wall_thickness/2-sqrt(2)*wall_thickness);
 
 lid_text="EXPLORE";
 module build_explore_lid() {
-    bottomFillet(b=0,r=.2,s=1,e=do_fillets) {
-        difference() {
-            group () {
+    difference() {
+        group () {
+            bottomFillet(b=0,r=.2,s=1,e=do_fillets) {
                 base_box([box_size.x, box_size.y, bottom_thickness]);
-                //small remaining box inset
-                topFillet(t=bottom_thickness+2, r=.6,s=3,e=do_fillets)
-                    translate([wall_thickness+.2, box_size.y-(remaining_box.y-.2+wall_thickness),bottom_thickness])
-                        linear_extrude(2)
-                            rounding2d(2)
-                                fillet2d(2)
-                                    square([remaining_box.x-.4, remaining_box.y-.4]);
             }
-
-            //cut out magnet holes
-            translate([0,0,bottom_thickness-magnet_thickness]) {
-                translate([0,0]+[-mag_trans,-mag_trans])
-                    cylinder(r=magnet_radius, h=magnet_thickness+1);
-                translate([box_size.x,0] + [mag_trans,-mag_trans])
-                    cylinder(r=magnet_radius, h=magnet_thickness+1);
-                translate([box_size.x,box_size.y] + [mag_trans,mag_trans])
-                    cylinder(r=magnet_radius, h=magnet_thickness+1);
-                translate([0,box_size.y] + [-mag_trans,mag_trans])
-                    cylinder(r=magnet_radius, h=magnet_thickness+1);
-            }
-
-            translate([0,0,-.1])
-                linear_extrude(.2+.1)
-                    translate([box_size.x/2,box_size.y/2])
-                        rotate(a=[0,180,-10])
-                            text(lid_text,font="Elric",valign="center", halign="center");
-                            
+            //small remaining box inset
+            topFillet(t=bottom_thickness+2, r=.6,s=3,e=do_fillets)
+                translate([wall_thickness+.2, box_size.y-(remaining_box.y-.2+wall_thickness),bottom_thickness])
+                    linear_extrude(2)
+                        rounding2d(2)
+                            fillet2d(2)
+                                square([remaining_box.x-.4, remaining_box.y-.4]);
         }
+
+        //cut out magnet holes
+        translate([0,0,bottom_thickness-magnet_thickness]) {
+            translate([0,0]+[-mag_trans,-mag_trans])
+                cylinder(r=magnet_radius, h=magnet_thickness+1);
+            translate([box_size.x,0] + [mag_trans,-mag_trans])
+                cylinder(r=magnet_radius, h=magnet_thickness+1);
+            translate([box_size.x,box_size.y] + [mag_trans,mag_trans])
+                cylinder(r=magnet_radius, h=magnet_thickness+1);
+            translate([0,box_size.y] + [-mag_trans,mag_trans])
+                cylinder(r=magnet_radius, h=magnet_thickness+1);
+        }
+
+        translate([0,0,-.1])
+            linear_extrude(.2+.1)
+                translate([box_size.x/2,box_size.y/2])
+                    rotate(a=[0,180,-10])
+                        text(lid_text,font="Elric",valign="center", halign="center");
+                        
     }
 }
 
