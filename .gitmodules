@@ -4,3 +4,6 @@
 [submodule "scad-utils"]
 	path = scad-utils
 	url = https://github.com/tereth-openscad/scad-utils.git
+[submodule "BOSL"]
+	path = BOSL
+	url = https://github.com/revarbat/BOSL.git
