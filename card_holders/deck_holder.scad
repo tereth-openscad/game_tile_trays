@@ -30,6 +30,13 @@ lid_text="Fighter";
 font="Book Antiqua";
 text_size=12;
 
+/* [Side Patterns] */
+bottom_pattern="H"; //[H:Hex, S:Solid]
+left_pattern="H"; //[H:Hex, S:Solid, O:Open]
+right_pattern="H"; //[H:Hex, S:Solid, O:Open]
+front_pattern="O"; //[H:Hex, S:Solid, O:Open]
+back_pattern="H"; //[H:Hex, S:Solid, O:Open]
+
 /* [Features] */
 //Add a spacer to the box (only really useful for a vertical box)
 add_spacer=true; //only set this if is_horiz is false
@@ -37,6 +44,8 @@ add_spacer=true; //only set this if is_horiz is false
 spacing=.5; 
 //How far down the spacer is from the top (mm)
 spacer_inset=15;
+//Pattern on the spacer
+spacer_pattern="H"; //[H:Hex, S:Solid]
 
 /* [Feature sizes] */
 //Size of Hex Cut Outs (for sides/bottom/spacer)
@@ -139,18 +148,6 @@ module build_lid()
     }
 }
 
-module build_opposite_fillet_pair(trans, rot) {
-    translate(trans) zrot(rot)
-        zrot_copies(n=2, r=(box_size.x-corner_width)/2)
-            zrot(90) interior_fillet(l=2, r=interior_fillet_r);
-}
-
-module build_fillet_pair(trans, spacing, cols, rows, orient) {
-    translate(trans)
-        grid2d(spacing=spacing, cols=cols, rows=rows)
-            interior_fillet(l=2, r=interior_fillet_r, orient=orient);
-}
-
 module build_simple_box(tolerance=0) {
     tol=tolerance;
     wall_thickness=[4,4,0];
@@ -165,9 +162,27 @@ module build_simple_box(tolerance=0) {
         //cut out the center
         up(base_thickness) linear_extrude(box_size.z + base_thickness)
             square(base_dim, center=true);
+
         //cut out front 
-        up(base_thickness) fwd(10) linear_extrude(box_size.z + base_thickness)
-            square([box_size.x - corner_width, box_size.y + 10] - [tol, 0], center=true);
+        if(front_pattern == "O") {
+            up(base_thickness) fwd(10) linear_extrude(box_size.z + base_thickness)
+                square([box_size.x - corner_width, box_size.y + 10] - [tol, 0], center=true);
+        }
+
+        if(back_pattern == "O") {
+            up(base_thickness) back(10) linear_extrude(box_size.z + base_thickness)
+                square([box_size.x - corner_width, box_size.y + 10] - [tol, 0], center=true);
+        }
+
+        if(left_pattern == "O") {
+            up(base_thickness) left(10) linear_extrude(box_size.z + base_thickness)
+                square([box_size.x + 10, box_size.y - corner_width] - [0, tol], center=true);
+        }
+
+        if(right_pattern == "O") {
+            up(base_thickness) right(10) linear_extrude(box_size.z + base_thickness)
+                square([box_size.x + 10, box_size.y - corner_width] - [0, tol], center=true);
+        }
     }
 }
 
@@ -180,19 +195,34 @@ module build_box(tolerance=0) {
         build_simple_box(tol);
 
         //pattern the back
-        up(box_size.z/2) back((box_size.y+wall_thickness.x)/2+.1) xrot(90) zrot(90)
-            build_hex_mask([box_size.z, box_size.x] - [8,4], hex_size, 5);
+        if(back_pattern == "H") {
+            up(box_size.z/2) back((box_size.y+wall_thickness.x)/2+.1) xrot(90) zrot(90)
+                build_hex_mask([box_size.z, box_size.x] - [8,4], hex_size, 5);
+        }
+
+        if(front_pattern == "H") {
+            up(box_size.z/2) forward((box_size.y)/2-.1) xrot(90) zrot(90)
+                build_hex_mask([box_size.z, box_size.x] - [8,4], hex_size, 5);
+        }
 
         //pattern the sides
-        up(box_size.z/2) left((box_size.x)/2+5/2-.1) yrot(90)
-            build_hex_mask([box_size.z, box_size.y] - [8,4], hex_size, 5);
-        up(box_size.z/2) right((box_size.x)/2-.1) yrot(90)
-            build_hex_mask([box_size.z, box_size.y] - [8,4], hex_size, 5);
+        if(left_pattern == "H") {
+            up(box_size.z/2) left((box_size.x)/2+5/2-.1) yrot(90)
+                build_hex_mask([box_size.z, box_size.y] - [8,4], hex_size, 5);
+        }
+
+        if(right_pattern == "H") {
+            up(box_size.z/2) right((box_size.x)/2-.1) yrot(90)
+                build_hex_mask([box_size.z, box_size.y] - [8,4], hex_size, 5);
+        }
 
         //pattern the bottom
-        down(.1)
-            build_hex_mask(base_dim-[4,4], hex_size, 5);
+        if(bottom_pattern == "H") {
+            down(.1)
+                build_hex_mask(base_dim-[4,4], hex_size, 5);
+        }
     }
+
     if(add_spacer) {
         fwd(box_size.y/2-box_size.y*spacing)
         difference() {
@@ -201,7 +231,22 @@ module build_box(tolerance=0) {
                 build_hex_mask([spacer_size.z, spacer_size.x] - [10,10], hex_size, 5);
         }
     }
-    build_opposite_fillet_pair([0,-(box_size.y/2+1),2], 0);
+
+    if(front_pattern == "O") {
+        build_opposite_fillet_pair(trans=[0,-(box_size.y/2+1),2], distance=(box_size.x-corner_width)/2, rot=0);
+    }
+
+    if(back_pattern == "O") {
+        build_opposite_fillet_pair([0,(box_size.y/2+1),2], distance=(box_size.x-corner_width)/2, rot=0);
+    }
+
+    if(left_pattern == "O") {
+        build_opposite_fillet_pair([-(box_size.x/2+1),0,2], distance=(box_size.y-corner_width)/2, rot=90);
+    }
+
+    if(right_pattern == "O") {
+        build_opposite_fillet_pair([(box_size.x/2+1),0,2], distance=(box_size.y-corner_width)/2, rot=90);
+    }
 }
 
 module build_hex_mask(size, d, thickness) {
@@ -227,5 +272,17 @@ module build_x_mask(size, sq_size) {
         }
         cuboid([size.x, size.y, 4]);
     }
+}
+
+module build_opposite_fillet_pair(trans, distance, rot) {
+    translate(trans) zrot(rot)
+        zrot_copies(n=2, r=distance)
+            zrot(90) interior_fillet(l=2, r=interior_fillet_r);
+}
+
+module build_fillet_pair(trans, spacing, cols, rows, orient) {
+    translate(trans)
+        grid2d(spacing=spacing, cols=cols, rows=rows)
+            interior_fillet(l=2, r=interior_fillet_r, orient=orient);
 }
 
