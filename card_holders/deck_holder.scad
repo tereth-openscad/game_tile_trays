@@ -115,6 +115,10 @@ function rows_for_size_sq(sq_size, fill_size) = ceil(fill_size/sq_size);
 function rows_for_size_hex(hex_diam, fill_size) = ceil(fill_size/hex_diam);
 function hex_flat_len(diam) = diam*sin(60);
 
+if((left_pattern == "O" || right_pattern == "O") && (lid_type == "FS" || lid_type == "BS")) {
+    echo("WARNING! Slide tops are not recommended with open sides patterns!");
+}
+
 if(lid_or_box == "B") {
     build_bottom();
 } else {
@@ -146,16 +150,27 @@ module build_bottom() {
             }
         } else {
             if(!no_fillets) {
-            //round the corners
+                //round the corners
                 grid2d([2*(box_size.x+4), 2*(box_size.y+4)], cols=2, rows=2)
                     fillet_corner_mask(r=1);
+            }
+        }
+
+        if(!no_fillets) {
+            up(box_size.z+base_thickness+wall_thickness) 
+                grid2d([2*(box_size.x+4), 2*(box_size.y+4)], cols=2, rows=2)
+                    fillet_corner_mask(r=1);
+            up(box_size.z+base_thickness+wall_thickness) {
+                grid2d([0, 2*(box_size.y+4)], cols=1,rows=2)
+                    fillet_mask_x(l=box_size.x+4, r=1);
+                grid2d([2*(box_size.x+4), 0], cols=2,rows=1)
+                    fillet_mask_y(l=box_size.y+4, r=1);
             }
         }
     }
 }
 
-module build_lid()
-{
+module build_lid() {
     difference() {
         cuboid([box_size.x+4, box_size.y+4, 4], align=V_UP);
 
@@ -178,7 +193,6 @@ module build_lid()
             grid2d([2*(box_size.x+1.6), 2*(box_size.y+1.6)], cols=2, rows=2)
                 fillet_mask_z(l=2, r=1, align=V_UP);
         }
-
         
         up(2) linear_extrude(2.1)
             text(lid_text, font=font, size=text_size, halign="center", valign="center");
@@ -186,20 +200,31 @@ module build_lid()
 }
 
 module build_simple_box(tolerance=0) {
-    tol=tolerance;
+    tol_v=[tolerance, tolerance];
     wall_t=[wall_thickness,wall_thickness,0]*2;
     support_thickness=[wall_thickness,wall_thickness,0];
     difference() {
         //make the outside a bit bigger to remove any extra wierdness
         linear_extrude(box_size.z + base_thickness + wall_thickness)
-            square(base_dim + wall_t + [tol, tol, 0], center=true);
-        //make the inside a bit smaller to add a tolerance in the mating parts
-        up(box_size.z + base_thickness) linear_extrude(box_size.z + base_thickness)
-            square(base_dim + support_thickness - [tol, tol, 0], center=true);
+            square(base_dim + wall_t + tol_v, center=true);
+
+        if(lid_type == "T") {
+            //make the inside a bit smaller to add a tolerance in the mating parts
+            up(box_size.z + base_thickness) linear_extrude(box_size.z + base_thickness)
+                square(base_dim + support_thickness - tol_v, center=true);
+        }
+
         //cut out the center
-        up(base_thickness) linear_extrude(box_size.z + base_thickness)
+        up(base_thickness) linear_extrude(box_size.z + base_thickness + 1)
             square(base_dim, center=true);
 
+        build_open_pattern_masks(tolerance);
+    }
+
+    build_thumb_rings();
+}
+
+module build_open_pattern_masks(tol) {
         //cut out front 
         if(front_pattern == "O") {
             up(base_thickness) fwd(10) linear_extrude(box_size.z + base_thickness+1)
@@ -244,10 +269,6 @@ module build_simple_box(tolerance=0) {
                         fillet_mask_x(l=2, r=2);
             }
         }
-    }
-
-    build_thumb_rings();
-
 }
 
 module build_thumb_rings() {
@@ -439,6 +460,15 @@ module thumb_ring(trans, rot)
             cylinder(d=thumb_d, h=5, center=true);
             back(outer_d/2)
                 cuboid([outer_d,outer_d,5],center=true);
+
+if(false) {
+            if(!no_fillet) {
+                up(spacer_size.y/2)
+                    fillet_hole_mask(d=thumb_d, fillet=1);
+                down(spacer_size.y/2) xrot(180)
+                    fillet_hole_mask(d=thumb_d, fillet=1);
+            }
+}
         }
     }
 }
