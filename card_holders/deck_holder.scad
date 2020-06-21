@@ -13,25 +13,27 @@ sleeve_size = [66, 91];
 //Deck Height/thickness
 deck_height = 32;
 
-/* [Orientation] */
+/* [General] */
+//Lid or Box
+lid_or_box="B"; //[B:Box, L:Lid, BL:Box and Lid]
+
 //Card storage direction (horizonal is like a stack of cards)
 horiz_or_vert="V";// [H:Horizontal, V:Vertical]
-
-//Lid or Box
-lid_or_box="B"; //[B:Box, L:Lid]
 
 is_horiz = horiz_or_vert == "H" ? true : false;
 
 //If the boxes should be stackable (cut the buttom so another box will sit on top)
 is_stackable = false;
 
-/* [Lid type] */
+/* [Lid] */
 lid_type="T"; //[T:Top insert, FS:Front Slide, RS:Rear Slide]
-
-/* [Lid Text] */
 lid_text="Fighter";
 font="Book Antiqua";
 text_size=12;
+lid_overlap=1;
+lid_thickness=4;//[4:.1:10]
+//Lid tolerance
+lid_tol=.4;
 
 /* [Side Patterns] */
 bottom_pattern="H"; //[H:Hex, S:Solid]
@@ -53,16 +55,16 @@ back_pattern="H"; //[H:Hex, S:Solid, O:Open]
 back_thumb_slot=false;
 
 /* [Spacer] */
-//Add a spacer to the box (only really useful for a vertical box)
-add_spacer=true; //only set this if is_horiz is false
-//Spacer position (ratio of front:back pocket size)
-spacing=.5; 
+//Number of spacers
+number_of_spacers=1;
 //How far down the spacer is from the top (mm)
 spacer_inset=15;
 //Pattern on the spacer
 spacer_pattern="H"; //[H:Hex, S:Solid, O:Open]
 //thumb slot
 spacer_thumb_slot=true;
+//spacer thickness
+spacer_thickness=2;
 
 /* [Pattern Details] */
 //Size of Hex Cut Outs (for sides/bottom/spacer)
@@ -71,22 +73,18 @@ hex_size=15;
 hex_line_thickness=3;
 //Hex border (solid border thickness around the hex patter)
 hex_border = 4;
-
 //How much of the card should be covered by the front
 corner_width = 15;
-
 //How much of the fillet should there be in the front bottom
 interior_fillet_r=20;
 
 /* [Extra tweakable items] */
-//Lid tolerance
-lid_tol=.4;
 //card tolerance
 card_tol=1;
 //Thickness of the base
 base_thickness=2;
-//Wall thickness
-wall_thickness=2;
+//Wall thickness - Minimum recommended: 2
+wall_thickness=3;
 //Extra height for vertical orientation
 extra_height_for_vert=1;
 
@@ -98,6 +96,8 @@ thumb_d = 20;
 no_fillets=true;
 //Make curves more curvier
 $fn=25;
+//is test
+is_test=true;
 
 /* [Hidden] */
 sleeve_size_w_tol = sleeve_size + [card_tol, card_tol];
@@ -106,7 +106,7 @@ horiz_box = concat(sleeve_size_w_tol, deck_height);
 vert_box = [sleeve_size_w_tol.x, deck_height, sleeve_size_w_tol.y + (is_horiz ? 0 : extra_height_for_vert)];
 box_size = is_horiz ? horiz_box : vert_box;
 
-spacer_size=[box_size.x+2*wall_thickness, wall_thickness, box_size.z-spacer_inset];
+spacer_size=[box_size.x+2*wall_thickness, spacer_thickness, box_size.z-spacer_inset];
 
 base_dim = [box_size.x, box_size.y];
 base = [box_size.x, box_size.y, base_thickness];
@@ -119,11 +119,20 @@ if((left_pattern == "O" || right_pattern == "O") && (lid_type == "FS" || lid_typ
     echo("WARNING! Slide tops are not recommended with open sides patterns!");
 }
 
-if(lid_or_box == "B") {
-    build_bottom();
-} else {
+if(lid_or_box == "B" || lid_or_box == "BL") {
+    difference() {
+        build_bottom();
+        if(is_test)
+        {
+            cuboid(box_size+[2*wall_thickness+2, 2*wall_thickness+2, -10], align=V_UP);
+        }
+    }
+} 
+
+if(lid_or_box == "L" || lid_or_box == "BL") {
     build_lid();
 }
+
 
 module build_bottom() {
     difference() {
@@ -133,10 +142,10 @@ module build_bottom() {
         if(!no_fillets) {
             grid2d([2*(box_size.x+wall_thickness*2), 2*(box_size.y+wall_thickness*2)], cols=2, rows=2)
                 fillet_mask_z(l=box_size.z + base_thickness + wall_thickness, r=1, align=V_UP);
-            grid2d([0, 2*(box_size.y+4)], cols=1,rows=2)
-                fillet_mask_x(l=box_size.x+4, r=1);
-            grid2d([2*(box_size.x+4), 0], cols=2,rows=1)
-                fillet_mask_y(l=box_size.y+4, r=1);
+            grid2d([0, 2*(box_size.y+wall_thickness*2)], cols=1,rows=2)
+                fillet_mask_x(l=box_size.x+wall_thickness*2, r=1);
+            grid2d([2*(box_size.x+wall_thickness*2), 0], cols=2,rows=1)
+                fillet_mask_y(l=box_size.y+wall_thickness*2, r=1);
         }
 
         if(is_stackable) {
@@ -145,17 +154,18 @@ module build_bottom() {
                 build_simple_box(tolerance=lid_tol);
             //round the cut corner
             if(!no_fillets) {
-                grid2d([2*(box_size.x+1.6), 2*(box_size.y+1.6)], cols=2, rows=2)
-                    fillet_mask_z(l=2, r=1, align=V_UP);
+                grid2d([2*(box_size.x+wall_thickness-lid_tol), 2*(box_size.y+wall_thickness-lid_tol)], cols=2, rows=2)
+                    fillet_mask_z(l=lid_overlap, r=1, align=V_UP);
             }
         } else {
             if(!no_fillets) {
                 //round the corners
-                grid2d([2*(box_size.x+4), 2*(box_size.y+4)], cols=2, rows=2)
+                grid2d([2*(box_size.x+2*wall_thickness), 2*(box_size.y+2*wall_thickness)], cols=2, rows=2)
                     fillet_corner_mask(r=1);
             }
         }
 
+/*
         if(!no_fillets) {
             up(box_size.z+base_thickness+wall_thickness) 
                 grid2d([2*(box_size.x+4), 2*(box_size.y+4)], cols=2, rows=2)
@@ -167,31 +177,32 @@ module build_bottom() {
                     fillet_mask_y(l=box_size.y+4, r=1);
             }
         }
+*/
     }
 }
 
 module build_lid() {
-    difference() {
-        cuboid([box_size.x+4, box_size.y+4, 4], align=V_UP);
-
-        if(!no_fillets) {
-            //fillet the outside corners
-            grid2d([2*(box_size.x+4), 2*(box_size.y+4)], cols=2, rows=2)
-                fillet_mask_z(l=box_size.z + 2, r=1, align=V_UP);
-            grid2d([0, 2*(box_size.y+4)], cols=1,rows=2)
-                fillet_mask_x(l=box_size.x+4, r=1);
-            grid2d([2*(box_size.x+4), 0], cols=2,rows=1)
-                fillet_mask_y(l=box_size.y+4, r=1);
+    up(lid_or_box == "BL" ? box_size.z + base_thickness - lid_overlap: 0) {
+        if(lid_type == "T") {
+            build_top_insert_lid();
+        } else {
+            build_sliding_lid(tol=lid_tol, align=V_UP);
         }
+    }
+}
+
+module build_top_insert_lid() {
+    difference() {
+        cuboid([box_size.x+wall_thickness*2, box_size.y+wall_thickness*2, lid_thickness], fillet=(no_fillets ? 0 : 1), edges=EDGES_TOP+EDGES_Z_ALL, align=V_UP);
 
         //cut the groves in the bottom
-        down(box_size.z) 
+        down(box_size.z + base_thickness) 
             build_simple_box(tolerance=lid_tol);
 
         if(!no_fillets) {
             //round the cut corner
-            grid2d([2*(box_size.x+1.6), 2*(box_size.y+1.6)], cols=2, rows=2)
-                fillet_mask_z(l=2, r=1, align=V_UP);
+            grid2d([2*(box_size.x+wall_thickness-lid_tol), 2*(box_size.y+wall_thickness-lid_tol)], cols=2, rows=2)
+                fillet_mask_z(l=lid_overlap, r=1, align=V_UP);
         }
         
         up(2) linear_extrude(2.1)
@@ -199,23 +210,67 @@ module build_lid() {
     }
 }
 
+module build_sliding_lid(tol=0, orient=ORIENT_X, align=V_CENTER) {
+    bevel_thickness=2;
+    //     |\                      |\
+    //     | \               2-tol | \
+    //   2 |  \                    |  \
+    //     |___\ <- angle          |___\ <- angle
+    //      1.5                      ?
+    center=lid_thickness/2-(bevel_thickness);
+    angle=atan(2/1.5);
+    top_bevel_x=tol/sin(angle)*2;
+    bottom_bevel_x=3-(2*(tol/tan(angle))+top_bevel_x);
+
+    //bevel_x = (bevel_thickness-tol)/tan(angle) * 2;
+    echo(top_bevel_x=top_bevel_x);
+    echo(bottom_bevel_x=bottom_bevel_x);
+
+    orient_and_align(size=[box_size.x+2*wall_thickness, box_size.y+2*wall_thickness, lid_thickness], orient=orient, align=align, orig_orient=ORIENT_X) {
+        difference() {
+            down(center) {
+                group() {
+                    cuboid([box_size.x+2*wall_thickness, box_size.y+2*wall_thickness, lid_thickness-bevel_thickness], fillet=1, edges=EDGES_TOP+EDGES_Z_ALL, align=V_UP);
+                    up(.001) fwd(wall_thickness/2)
+                        prismoid(size1=[box_size.x+bottom_bevel_x, box_size.y+wall_thickness], size2=[box_size.x-top_bevel_x, box_size.y+wall_thickness], h=bevel_thickness-tol, align=V_DOWN);
+                    if(false) {
+                        //slide knobs
+                        fwd(box_size.y/2) up(lid_thickness-bevel_thickness) {
+                            yspread(n=3,l=4)
+                                cuboid([15,.6,.4], fillet=.2, edges=EDGES_TOP, align=V_UP);
+                        }
+                    }
+                }
+            }
+
+            up(lid_thickness/2-1)
+            linear_extrude(1.1)
+                text(lid_text, font=font, size=text_size, halign="center", valign="center");
+        }
+    }
+}
+
 module build_simple_box(tolerance=0) {
     tol_v=[tolerance, tolerance];
     wall_t=[wall_thickness,wall_thickness,0]*2;
-    support_thickness=[wall_thickness,wall_thickness,0];
+    support_thickness=[lid_overlap,lid_overlap,0];
     difference() {
         //make the outside a bit bigger to remove any extra wierdness
-        linear_extrude(box_size.z + base_thickness + wall_thickness)
+        linear_extrude(box_size.z + base_thickness + lid_overlap)
             square(base_dim + wall_t + tol_v, center=true);
 
         if(lid_type == "T") {
             //make the inside a bit smaller to add a tolerance in the mating parts
-            up(box_size.z + base_thickness) linear_extrude(box_size.z + base_thickness)
-                square(base_dim + support_thickness - tol_v, center=true);
+            up(box_size.z + base_thickness) linear_extrude(lid_overlap+.1)
+                square(base_dim + wall_t/2 - tol_v, center=true);
+        } else {
+            up(box_size.z + base_thickness - lid_overlap)
+                build_sliding_lid(align=V_UP);
         }
 
+
         //cut out the center
-        up(base_thickness) linear_extrude(box_size.z + base_thickness + 1)
+        up(base_thickness) linear_extrude(box_size.z + base_thickness + wall_thickness)
             square(base_dim, center=true);
 
         build_open_pattern_masks(tolerance);
@@ -305,19 +360,19 @@ module build_box(tolerance=0) {
 
 module build_thumb_slot_masks() {
     if(back_thumb_slot && back_pattern != "O") {
-        thumb_hole_mask([0,box_size.y/2, box_size.z+base_thickness], [90,0,0]);
+        thumb_hole_mask([0,(box_size.y+wall_thickness)/2, box_size.z+base_thickness]);
     }
     
     if(front_thumb_slot && front_pattern != "O") {
-        thumb_hole_mask([0,-box_size.y/2, box_size.z+base_thickness], [90,0,0]);
+        thumb_hole_mask([0,-(wall_thickness+box_size.y)/2, box_size.z+base_thickness]);
     }
 
     if(left_thumb_slot && left_pattern != "O") {
-        thumb_hole_mask([-box_size.x/2,0, box_size.z+base_thickness], [90,0,90]);
+        thumb_hole_mask([-(box_size.x+wall_thickness)/2,0, box_size.z+base_thickness], orient=ORIENT_Z_90);
     }
 
     if(right_thumb_slot && right_pattern != "O") {
-        thumb_hole_mask([box_size.x/2,0, box_size.z+base_thickness], [90,0,90]);
+        thumb_hole_mask([(box_size.x+wall_thickness)/2,0, box_size.z+base_thickness], orient=ORIENT_Z_90);
     }
 }
 
@@ -371,8 +426,10 @@ module build_open_face_fillets() {
 
 module build_spacer() {
     wall_t=[wall_thickness,wall_thickness,0]*2;
-    if(add_spacer) {
-        fwd(box_size.y/2-box_size.y*spacing) {
+    num_spacers = number_of_spacers;
+    if(number_of_spacers > 0) {
+    spacing=(box_size.y-num_spacers*spacer_thickness)/(num_spacers+1)+spacer_thickness;
+        yspread(spacing=spacing, n=number_of_spacers) {
             difference() {
                 cuboid(spacer_size, align=V_UP);
                 if(spacer_pattern == "H") {
@@ -395,8 +452,10 @@ module build_spacer() {
             }
         }
 
-        if(spacer_pattern == "O") {
-            build_opposite_fillet_pair([0,0,0], distance=(box_size.x-corner_width)/2, rot=0);
+        yspread(spacing=spacing, n=number_of_spacers) {
+            if(spacer_pattern == "O") {
+                build_opposite_fillet_pair([0,0,0], distance=(box_size.x-corner_width)/2, rot=0, thickness=spacer_thickness);
+            }
         }
     }
 }
@@ -428,7 +487,7 @@ module build_x_mask(size, sq_size) {
     }
 }
 
-module build_opposite_fillet_pair(trans, distance, rot) {
+module build_opposite_fillet_pair(trans, distance, rot,thickness=wall_thickness) {
     translate(trans) zrot(rot)
         zrot_copies(n=2, r=distance)
             zrot(90) interior_fillet(l=2, r=interior_fillet_r);
@@ -440,14 +499,15 @@ module build_fillet_pair(trans, spacing, cols, rows, orient) {
             interior_fillet(l=2, r=interior_fillet_r, orient=orient);
 }
 
-module thumb_hole_mask(trans, rot, thickness=5)
+module thumb_hole_mask(trans, thickness=wall_thickness, orient=ORIENT_Z, align=V_CENTER)
 {
-    translate(trans) rot(rot)
-    group() {
-        back(thumb_d/2)
-            cuboid([thumb_d,thumb_d,thickness]);
-        cylinder(d=thumb_d, h=thickness, center=true);
-    }
+    translate(trans)
+        orient_and_align([thumb_d, thumb_d, thickness], orient=orient, align=align, orig_orient=ORIENT_Y)
+            group () {
+                back(thumb_d/2)
+                    cuboid([thumb_d,thumb_d,thickness+1]);
+                cylinder(d=thumb_d, h=thickness+1, center=true);
+            }
 }
 
 module thumb_ring(trans, rot)
@@ -457,9 +517,9 @@ module thumb_ring(trans, rot)
         difference() {
             outer_d = thumb_d + hex_line_thickness*2;
             cylinder(d=outer_d, h=spacer_size.y, center=true);
-            cylinder(d=thumb_d, h=5, center=true);
+            cylinder(d=thumb_d, h=wall_thickness+2, center=true);
             back(outer_d/2)
-                cuboid([outer_d,outer_d,5],center=true);
+                cuboid([outer_d,outer_d,wall_thickness+2],center=true);
 
 if(false) {
             if(!no_fillet) {
