@@ -263,7 +263,7 @@
             "lid_overlap": "1",
             "lid_text": "Base Decks",
             "lid_thickness": "4",
-            "lid_tol": "0.2",
+            "lid_tol": "0.1",
             "lid_type": "FS",
             "no_fillets": "false",
             "number_of_spacers": "3",

@@ -104,7 +104,7 @@ sleeve_size_w_tol = sleeve_size + [card_tol, card_tol];
 
 horiz_box = concat(sleeve_size_w_tol, deck_height);
 vert_box = [sleeve_size_w_tol.x, deck_height, sleeve_size_w_tol.y + (is_horiz ? 0 : extra_height_for_vert)];
-box_size = is_horiz ? horiz_box : vert_box;
+box_size = (is_horiz ? horiz_box : vert_box) + [0,0,lid_overlap];
 
 spacer_size=[box_size.x+2*wall_thickness, spacer_thickness, box_size.z-spacer_inset];
 
@@ -282,7 +282,7 @@ module build_open_pattern_masks(tol) {
                 square([box_size.x - corner_width, box_size.y + 10] - [tol, 0], center=true);
 
             if(!no_fillets) {
-                up(box_size.z+base_thickness) fwd((box_size.y+wall_thickness)/2)
+                up(box_size.z+base_thickness-lid_overlap) fwd((box_size.y+wall_thickness)/2)
                     grid2d([(box_size.x-corner_width) * 2, 0], cols=2, rows=1)
                         fillet_mask_y(l=wall_thickness, r=2);
             }
@@ -293,7 +293,7 @@ module build_open_pattern_masks(tol) {
                 square([box_size.x - corner_width, box_size.y + 10] - [tol, 0], center=true);
 
             if(!no_fillets) {
-                up(box_size.z+base_thickness+wall_thickness) back((box_size.y+wall_thickness)/2)
+                up(box_size.z+base_thickness+wall_thickness-lid_overlap) back((box_size.y+wall_thickness)/2)
                     grid2d([(box_size.x-corner_width) * 2, 0], cols=2, rows=1)
                         fillet_mask_y(l=2, r=2);
             }
@@ -304,7 +304,7 @@ module build_open_pattern_masks(tol) {
                 square([box_size.x + 10, box_size.y - corner_width] - [0, tol], center=true);
 
             if(!no_fillets) {
-                up(box_size.z+base_thickness+wall_thickness) left((box_size.x+wall_thickness)/2)
+                up(box_size.z+base_thickness+wall_thickness-lid_overlap) left((box_size.x+wall_thickness)/2)
                     grid2d([0, (box_size.y-corner_width) * 2], cols=1, rows=2)
                         fillet_mask_x(l=2, r=2);
             }
@@ -315,7 +315,7 @@ module build_open_pattern_masks(tol) {
                 square([box_size.x + 10, box_size.y - corner_width] - [0, tol], center=true);
 
             if(!no_fillets) {
-                up(box_size.z+base_thickness+wall_thickness) right((box_size.x+wall_thickness)/2)
+                up(box_size.z+base_thickness+wall_thickness-lid_overlap) right((box_size.x+wall_thickness)/2)
                     grid2d([0, (box_size.y-corner_width) * 2], cols=1, rows=2)
                         fillet_mask_x(l=2, r=2);
             }
@@ -440,6 +440,12 @@ module build_spacer() {
 
                 if((spacer_pattern != "O") && spacer_thumb_slot) {
                     thumb_hole_mask([0,0,spacer_size.z], [90,0,0]);
+                }
+
+                if(!no_fillets) {
+                    up(box_size.z-spacer_inset)
+                        grid2d([(box_size.x-corner_width) * 2, 0], cols=2, rows=1)
+                            fillet_mask_y(l=wall_thickness, r=2);
                 }
             }
 
