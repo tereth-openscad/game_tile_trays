@@ -222,10 +222,6 @@ module build_sliding_lid(tol=0, orient=ORIENT_X, align=V_CENTER) {
     top_bevel_x=tol/sin(angle)*2;
     bottom_bevel_x=3-(2*(tol/tan(angle))+top_bevel_x);
 
-    //bevel_x = (bevel_thickness-tol)/tan(angle) * 2;
-    echo(top_bevel_x=top_bevel_x);
-    echo(bottom_bevel_x=bottom_bevel_x);
-
     orient_and_align(size=[box_size.x+2*wall_thickness, box_size.y+2*wall_thickness, lid_thickness], orient=orient, align=align, orig_orient=ORIENT_X) {
         difference() {
             down(center) {
@@ -286,9 +282,9 @@ module build_open_pattern_masks(tol) {
                 square([box_size.x - corner_width, box_size.y + 10] - [tol, 0], center=true);
 
             if(!no_fillets) {
-                up(box_size.z+base_thickness+wall_thickness) fwd((box_size.y+wall_thickness)/2)
+                up(box_size.z+base_thickness) fwd((box_size.y+wall_thickness)/2)
                     grid2d([(box_size.x-corner_width) * 2, 0], cols=2, rows=1)
-                        fillet_mask_y(l=2, r=2);
+                        fillet_mask_y(l=wall_thickness, r=2);
             }
         }
 
@@ -407,19 +403,19 @@ module build_wall_pattern_masks() {
 
 module build_open_face_fillets() {
     if(front_pattern == "O") {
-        build_opposite_fillet_pair(trans=[0,-(box_size.y/2+1),base_thickness], distance=(box_size.x-corner_width)/2, rot=0);
+        build_opposite_fillet_pair(trans=[0,-((box_size.y+wall_thickness)/2),base_thickness], distance=(box_size.x-corner_width)/2, rot=0);
     }
 
     if(back_pattern == "O") {
-        build_opposite_fillet_pair([0,(box_size.y/2+1),base_thickness], distance=(box_size.x-corner_width)/2, rot=0);
+        build_opposite_fillet_pair([0,((box_size.y+wall_thickness)/2),base_thickness], distance=(box_size.x-corner_width)/2, rot=0);
     }
 
     if(left_pattern == "O") {
-        build_opposite_fillet_pair([-(box_size.x/2+1),0,base_thickness], distance=(box_size.y-corner_width)/2, rot=90);
+        build_opposite_fillet_pair([-((box_size.x+wall_thickness)/2),0,base_thickness], distance=(box_size.y-corner_width)/2, rot=90);
     }
 
     if(right_pattern == "O") {
-        build_opposite_fillet_pair([(box_size.x/2+1),0,base_thickness], distance=(box_size.y-corner_width)/2, rot=90);
+        build_opposite_fillet_pair([((box_size.x+wall_thickness)/2),0,base_thickness], distance=(box_size.y-corner_width)/2, rot=90);
     }
 
 }
@@ -428,7 +424,7 @@ module build_spacer() {
     wall_t=[wall_thickness,wall_thickness,0]*2;
     num_spacers = number_of_spacers;
     if(number_of_spacers > 0) {
-    spacing=(box_size.y-num_spacers*spacer_thickness)/(num_spacers+1)+spacer_thickness;
+        spacing=(box_size.y-num_spacers*spacer_thickness)/(num_spacers+1)+spacer_thickness;
         yspread(spacing=spacing, n=number_of_spacers) {
             difference() {
                 cuboid(spacer_size, align=V_UP);
@@ -454,7 +450,7 @@ module build_spacer() {
 
         yspread(spacing=spacing, n=number_of_spacers) {
             if(spacer_pattern == "O") {
-                build_opposite_fillet_pair([0,0,0], distance=(box_size.x-corner_width)/2, rot=0, thickness=spacer_thickness);
+                build_opposite_fillet_pair([0,0,base_thickness], distance=(box_size.x-corner_width)/2, rot=0, thickness=spacer_thickness);
             }
         }
     }
@@ -490,7 +486,7 @@ module build_x_mask(size, sq_size) {
 module build_opposite_fillet_pair(trans, distance, rot,thickness=wall_thickness) {
     translate(trans) zrot(rot)
         zrot_copies(n=2, r=distance)
-            zrot(90) interior_fillet(l=2, r=interior_fillet_r);
+            zrot(90) interior_fillet(l=thickness, r=interior_fillet_r);
 }
 
 module build_fillet_pair(trans, spacing, cols, rows, orient) {
