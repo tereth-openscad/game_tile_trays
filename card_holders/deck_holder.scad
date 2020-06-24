@@ -6,6 +6,9 @@ use <../BOSL/transforms.scad>
 use <../BOSL/shapes.scad>
 use <../BOSL/masks.scad>
 
+_version_=str("2"); //this is wierd to hide it from the customizer
+echo(str("Building Version ",_version_," box..."));
+
 /* [Sleeve/card size] */
 //Sleeve/Card size
 sleeve_size = [66, 91]; 
@@ -26,17 +29,18 @@ is_horiz = horiz_or_vert == "H" ? true : false;
 is_stackable = false;
 
 /* [Lid] */
-lid_type="T"; //[T:Top insert, FS:Front Slide, RS:Rear Slide]
+lid_type="FS"; //[T:Top insert, FS:Front Slide, RS:Rear Slide]
 lid_text="Fighter";
 font="Book Antiqua";
 text_size=12;
 lid_overlap=1;
 lid_thickness=4;//[4:.1:10]
 //Lid tolerance
-lid_tol=.4;
+lid_tol=.1; //[0:.01:1]
+emboss_tolerance=false;
 
 /* [Side Patterns] */
-bottom_pattern="H"; //[H:Hex, S:Solid]
+bottom_pattern="S"; //[H:Hex, S:Solid]
 //*not implemented*
 bottom_front_thumb_slot=false; 
 //*not implemented*
@@ -45,22 +49,22 @@ bottom_back_thumb_slot=false;
 bottom_left_thumb_slot=false;
 //*not implemented*
 bottom_right_thumb_slot=false;
-left_pattern="H"; //[H:Hex, S:Solid, O:Open]
+left_pattern="S"; //[H:Hex, S:Solid, O:Open]
 left_thumb_slot=false;
-right_pattern="H"; //[H:Hex, S:Solid, O:Open]
+right_pattern="S"; //[H:Hex, S:Solid, O:Open]
 right_thumb_slot=false;
 front_pattern="O"; //[H:Hex, S:Solid, O:Open]
 front_thumb_slot=false;
-back_pattern="H"; //[H:Hex, S:Solid, O:Open]
+back_pattern="S"; //[H:Hex, S:Solid, O:Open]
 back_thumb_slot=false;
 
 /* [Spacer] */
 //Number of spacers
 number_of_spacers=1;
 //How far down the spacer is from the top (mm)
-spacer_inset=15;
+spacer_inset=10;
 //Pattern on the spacer
-spacer_pattern="H"; //[H:Hex, S:Solid, O:Open]
+spacer_pattern="O"; //[H:Hex, S:Solid, O:Open]
 //thumb slot
 spacer_thumb_slot=true;
 //spacer thickness
@@ -95,9 +99,9 @@ thumb_d = 20;
 //Remove some fillets to make render faster
 no_fillets=true;
 //Make curves more curvier
-$fn=25;
+$fn=50;
 //is test
-is_test=true;
+is_test=false;
 
 /* [Hidden] */
 sleeve_size_w_tol = sleeve_size + [card_tol, card_tol];
@@ -240,8 +244,13 @@ module build_sliding_lid(tol=0, orient=ORIENT_X, align=V_CENTER) {
             }
 
             up(lid_thickness/2-1)
-            linear_extrude(1.1)
-                text(lid_text, font=font, size=text_size, halign="center", valign="center");
+                linear_extrude(1.1)
+                    text(lid_text, font=font, size=text_size, halign="center", valign="center");
+            if(emboss_tolerance) {
+                down(lid_thickness/2)
+                    yrot(180) linear_extrude(.7, center=true)
+                        text(str("tol: ", lid_tol), size=6, halign="center", valign="center");
+            }
         }
     }
 }
@@ -436,17 +445,18 @@ module build_spacer() {
                 if(spacer_pattern == "O") {
                     up(base_thickness)
                         cuboid(box_size-[corner_width,-1,-1], align=V_UP);
+
+                    if(!no_fillets) {
+                        up(box_size.z-spacer_inset)
+                            grid2d([(box_size.x-corner_width) * 2, 0], cols=2, rows=1)
+                                fillet_mask_y(l=wall_thickness, r=2);
+                    }
                 }
 
                 if((spacer_pattern != "O") && spacer_thumb_slot) {
                     thumb_hole_mask([0,0,spacer_size.z], [90,0,0]);
                 }
 
-                if(!no_fillets) {
-                    up(box_size.z-spacer_inset)
-                        grid2d([(box_size.x-corner_width) * 2, 0], cols=2, rows=1)
-                            fillet_mask_y(l=wall_thickness, r=2);
-                }
             }
 
             if((spacer_pattern == "H") && spacer_thumb_slot) {
@@ -501,36 +511,47 @@ module build_fillet_pair(trans, spacing, cols, rows, orient) {
             interior_fillet(l=2, r=interior_fillet_r, orient=orient);
 }
 
-module thumb_hole_mask(trans, thickness=wall_thickness, orient=ORIENT_Z, align=V_CENTER)
-{
-    translate(trans)
-        orient_and_align([thumb_d, thumb_d, thickness], orient=orient, align=align, orig_orient=ORIENT_Y)
+module thumb_hole_mask(trans, thickness=wall_thickness, orient=ORIENT_Z, align=V_CENTER) {
+    translate(trans) {
+        orient_and_align([thumb_d, thumb_d, thickness], orient=orient, align=align, orig_orient=ORIENT_Y) {
             group () {
                 back(thumb_d/2)
                     cuboid([thumb_d,thumb_d,thickness+1]);
                 cylinder(d=thumb_d, h=thickness+1, center=true);
+
+                back(thumb_d/2)
+                    grid2d(spacing=[thumb_d, wall_thickness, thumb_d], cols=2,rows=2, orient=ORIENT_Y)
+                        fillet_mask_y(l=thumb_d, r=1);
+
+                up(wall_thickness/2)
+                    fillet_hole_mask(d=thumb_d, fillet=1);
+                down(wall_thickness/2) yrot(180)
+                    fillet_hole_mask(d=thumb_d, fillet=1);
             }
+        }
+    }
 }
 
-module thumb_ring(trans, rot)
+module thumb_ring(trans, rot, thickness=wall_thickness)
 {
     //add the thumb ring
     translate(trans) rot(rot) {
         difference() {
             outer_d = thumb_d + hex_line_thickness*2;
-            cylinder(d=outer_d, h=spacer_size.y, center=true);
-            cylinder(d=thumb_d, h=wall_thickness+2, center=true);
+            cylinder(d=outer_d, h=thickness, center=true);
+            cylinder(d=thumb_d, h=thickness+2, center=true);
             back(outer_d/2)
                 cuboid([outer_d,outer_d,wall_thickness+2],center=true);
 
-if(false) {
-            if(!no_fillet) {
-                up(spacer_size.y/2)
-                    fillet_hole_mask(d=thumb_d, fillet=1);
-                down(spacer_size.y/2) xrot(180)
-                    fillet_hole_mask(d=thumb_d, fillet=1);
+            if(true) {
+                //this is to fillet the rounded part of the thumb ring
+                if(!no_fillets) {
+                    up(thickness/2)
+                        fillet_hole_mask(d=thumb_d, fillet=1);
+                    down(thickness/2) xrot(180)
+                        fillet_hole_mask(d=thumb_d, fillet=1);
+                }
             }
-}
         }
     }
 }
