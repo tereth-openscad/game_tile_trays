@@ -1,12 +1,11 @@
 
-include <../hexgrid.scad>
 include <../BOSL/constants.scad>
 use <../BOSL/math.scad>
 use <../BOSL/transforms.scad>
 use <../BOSL/shapes.scad>
 use <../BOSL/masks.scad>
 
-_version_=str("2"); //this is wierd to hide it from the customizer
+_version_=str("5"); //this is wierd to hide it from the customizer
 echo(str("Building Version ",_version_," box..."));
 
 /* [Sleeve/card size] */
