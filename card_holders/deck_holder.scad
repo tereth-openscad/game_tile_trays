@@ -5,7 +5,11 @@ use <../BOSL/transforms.scad>
 use <../BOSL/shapes.scad>
 use <../BOSL/masks.scad>
 
-_version_=str("5"); //this is wierd to hide it from the customizer
+//V6 - Added custom spacer spacing
+//   - Added multi-line text for lids
+//   - Fixed top fillet of spacers to based on spacer thickness
+
+_version_=str("6"); //this is wierd to hide it from the customizer
 echo(str("Building Version ",_version_," box..."));
 
 /* [Sleeve/card size] */
@@ -14,6 +18,9 @@ sleeve_size = [66, 91];
 
 //Deck Height/thickness
 deck_height = 32;
+
+//If using custom spacer spacing this will auto-calculate the box thickness overriding the above setting
+auto_calc_deck_thickness=false;
 
 /* [General] */
 //Lid or Box
@@ -29,7 +36,7 @@ is_stackable = false;
 
 /* [Lid] */
 lid_type="FS"; //[T:Top insert, FS:Front Slide, RS:Rear Slide]
-lid_text="Fighter";
+lid_text=[];
 font="Book Antiqua";
 text_size=12;
 lid_overlap=1;
@@ -68,6 +75,10 @@ spacer_pattern="O"; //[H:Hex, S:Solid, O:Open]
 spacer_thumb_slot=true;
 //spacer thickness
 spacer_thickness=2;
+// If this is true the number of spacers variable is disregarded and the number of spacers is based on the spacing vector
+use_custom_spacer_spacing=true;
+// When using custom spacing this is the slot spacing starting from the back of the box to the front
+spacer_spacing=[];
 
 /* [Pattern Details] */
 //Size of Hex Cut Outs (for sides/bottom/spacer)
@@ -87,7 +98,7 @@ card_tol=1;
 //Thickness of the base
 base_thickness=2;
 //Wall thickness - Minimum recommended: 2
-wall_thickness=3;
+wall_thickness=3; //[2:.1:10]
 //Extra height for vertical orientation
 extra_height_for_vert=1;
 
@@ -105,8 +116,13 @@ is_test=false;
 /* [Hidden] */
 sleeve_size_w_tol = sleeve_size + [card_tol, card_tol];
 
-horiz_box = concat(sleeve_size_w_tol, deck_height);
-vert_box = [sleeve_size_w_tol.x, deck_height, sleeve_size_w_tol.y + (is_horiz ? 0 : extra_height_for_vert)];
+auto_deck_height = auto_calc_deck_thickness ? (add(spacer_spacing) + ((len(spacer_spacing)-1)*spacer_thickness)) : deck_height;
+if(auto_calc_deck_thickness) {
+    echo(str("Building box with thickness ", auto_deck_height));
+}
+
+horiz_box = concat(sleeve_size_w_tol, auto_deck_height);
+vert_box = [sleeve_size_w_tol.x, auto_deck_height, sleeve_size_w_tol.y + (is_horiz ? 0 : extra_height_for_vert)];
 box_size = (is_horiz ? horiz_box : vert_box) + [0,0,lid_overlap];
 
 spacer_size=[box_size.x+2*wall_thickness, spacer_thickness, box_size.z-spacer_inset];
@@ -114,9 +130,14 @@ spacer_size=[box_size.x+2*wall_thickness, spacer_thickness, box_size.z-spacer_in
 base_dim = [box_size.x, box_size.y];
 base = [box_size.x, box_size.y, base_thickness];
 
+function add(v, i = 0, r = 0) = i < len(v) ? add(v, i + 1, r + v[i]) : r;
 function rows_for_size_sq(sq_size, fill_size) = ceil(fill_size/sq_size);
 function rows_for_size_hex(hex_diam, fill_size) = ceil(fill_size/hex_diam);
 function hex_flat_len(diam) = diam*sin(60);
+
+//check to make sure the spacer spacing matches the deck height 
+assert(!(use_custom_spacer_spacing && ((add(spacer_spacing) + (len(spacer_spacing) - 1) * spacer_thickness) != auto_deck_height)), 
+        "Spacer spacing calculation doesn't match deck height");
 
 if((left_pattern == "O" || right_pattern == "O") && (lid_type == "FS" || lid_type == "BS")) {
     echo("WARNING! Slide tops are not recommended with open sides patterns!");
@@ -194,6 +215,8 @@ module build_lid() {
     }
 }
 
+function calc_text_spacing(i, text_size, text_spacing, num_lines) = (i-1)*(text_size+text_spacing) + ((num_lines%2 == 0) ? (text_size+text_spacing)/2:0);
+
 module build_top_insert_lid() {
     difference() {
         cuboid([box_size.x+wall_thickness*2, box_size.y+wall_thickness*2, lid_thickness], fillet=(no_fillets ? 0 : 1), edges=EDGES_TOP+EDGES_Z_ALL, align=V_UP);
@@ -208,8 +231,13 @@ module build_top_insert_lid() {
                 fillet_mask_z(l=lid_overlap, r=1, align=V_UP);
         }
         
-        up(2) linear_extrude(2.1)
-            text(lid_text, font=font, size=text_size, halign="center", valign="center");
+        if(len(lid_text) > 0) {
+            for(i=[0 : len(lid_text)-1]) {
+                up(2) fwd(calc_text_spacing(i, text_size, 3, len(lid_text)))
+                    linear_extrude(2.1)
+                        text(lid_text[i], font=font, size=text_size, halign="center", valign="center");
+            }
+        }
     }
 }
 
@@ -242,9 +270,13 @@ module build_sliding_lid(tol=0, orient=ORIENT_X, align=V_CENTER) {
                 }
             }
 
-            up(lid_thickness/2-1)
-                linear_extrude(1.1)
-                    text(lid_text, font=font, size=text_size, halign="center", valign="center");
+            if(len(lid_text) > 0) {
+                for(i=[0 : len(lid_text)-1]) {
+                    up(lid_thickness/2-1) fwd(calc_text_spacing(i, text_size, 3, len(lid_text)))
+                        linear_extrude(1.1)
+                            text(lid_text[i], font=font, size=text_size, halign="center", valign="center");
+                }
+            }
             if(emboss_tolerance) {
                 down(lid_thickness/2)
                     yrot(180) linear_extrude(.7, center=true)
@@ -428,44 +460,50 @@ module build_open_face_fillets() {
 
 }
 
+function build_spacing_array(num, dist, thickness) = [for(i = [1:num]) [0,-(i*((dist-num*thickness)/(num+1)+thickness)-thickness/2),0]];
+function sumv(v,i,s=0) = (i==s ? v[i] : v[i] + sumv(v,i-1,s));
+
 module build_spacer() {
     wall_t=[wall_thickness,wall_thickness,0]*2;
-    num_spacers = number_of_spacers;
-    if(number_of_spacers > 0) {
-        spacing=(box_size.y-num_spacers*spacer_thickness)/(num_spacers+1)+spacer_thickness;
-        yspread(spacing=spacing, n=number_of_spacers) {
-            difference() {
-                cuboid(spacer_size, align=V_UP);
-                if(spacer_pattern == "H") {
-                    up(spacer_size.z/2)
-                        build_hex_mask([spacer_size.z, spacer_size.x] - (side_hex_border+wall_t), hex_size, wall_thickness+1, orient=ORIENT_Z);
+
+    num_spacers = use_custom_spacer_spacing ? (len(spacer_spacing) - 1) : number_of_spacers;
+    spacing = use_custom_spacer_spacing ? [for(i = [0:num_spacers-1]) [0, -(sumv(spacer_spacing, i)+i*spacer_thickness+spacer_thickness/2), 0]]
+                : build_spacing_array(num_spacers, box_size.y, spacer_thickness);
+    if(num_spacers > 0) {
+        //spacing=(box_size.y-num_spacers*spacer_thickness)/(num_spacers+1)+spacer_thickness;
+        back(box_size.y/2) {
+            place_copies(spacing) {
+                difference() {
+                    cuboid(spacer_size, align=V_UP);
+                    if(spacer_pattern == "H") {
+                        up(spacer_size.z/2)
+                            build_hex_mask([spacer_size.z, spacer_size.x] - (side_hex_border+wall_t), hex_size, wall_thickness+1, orient=ORIENT_Z);
+                    }
+
+                    if(spacer_pattern == "O") {
+                        up(base_thickness)
+                            cuboid(box_size-[corner_width,-1,-1], align=V_UP);
+
+                        if(!no_fillets) {
+                            up(box_size.z-spacer_inset)
+                                grid2d([(box_size.x-corner_width) * 2, 0], cols=2, rows=1)
+                                    fillet_mask_y(l=spacer_thickness, r=2);
+                        }
+                    }
+
+                    if((spacer_pattern != "O") && spacer_thumb_slot) {
+                        thumb_hole_mask([0,0,spacer_size.z], [90,0,0]);
+                    }
+
+                }
+
+                if((spacer_pattern == "H") && spacer_thumb_slot) {
+                    thumb_ring([0,0,spacer_size.z], [90,0,0]);
                 }
 
                 if(spacer_pattern == "O") {
-                    up(base_thickness)
-                        cuboid(box_size-[corner_width,-1,-1], align=V_UP);
-
-                    if(!no_fillets) {
-                        up(box_size.z-spacer_inset)
-                            grid2d([(box_size.x-corner_width) * 2, 0], cols=2, rows=1)
-                                fillet_mask_y(l=wall_thickness, r=2);
-                    }
+                    build_opposite_fillet_pair([0,0,base_thickness], distance=(box_size.x-corner_width)/2, rot=0, thickness=spacer_thickness);
                 }
-
-                if((spacer_pattern != "O") && spacer_thumb_slot) {
-                    thumb_hole_mask([0,0,spacer_size.z], [90,0,0]);
-                }
-
-            }
-
-            if((spacer_pattern == "H") && spacer_thumb_slot) {
-                thumb_ring([0,0,spacer_size.z], [90,0,0]);
-            }
-        }
-
-        yspread(spacing=spacing, n=number_of_spacers) {
-            if(spacer_pattern == "O") {
-                build_opposite_fillet_pair([0,0,base_thickness], distance=(box_size.x-corner_width)/2, rot=0, thickness=spacer_thickness);
             }
         }
     }
