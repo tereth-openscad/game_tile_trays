@@ -6,7 +6,7 @@ magnet_thickness=1;
 middle_magnets=true;
 bottom_left_magnet=false;
 
-use <helpers/primatives.scad>
+use <../helpers/primatives.scad>
 
 magnet_circle_size = max(wall_thickness*2, magnet_diameter+row_offset/2);
 magnet_left_middle_cut_trans=min(row_offset-magnet_radius-.1,0);

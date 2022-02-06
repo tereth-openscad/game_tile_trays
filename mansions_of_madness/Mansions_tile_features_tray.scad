@@ -12,14 +12,14 @@ wall_lines = 9;
 num_tiles=7;
 
 include <mansions_tile_sizes.scad>;
-use <helpers/fillets/fillets2d.scad>;
-use <helpers/fillets/fillets3d.scad>;
+use <../helpers/fillets/fillets2d.scad>;
+use <../helpers/fillets/fillets3d.scad>;
 
 $fn=50;
 
 build_box = true;
 build_lid = true;
-do_fillets = 1;
+do_fillets = 0;
 
 row_1_w = sq_tile*2+rec_tile_w;
 row_2_w = sq_tile + 2*rec_tile_w;
@@ -55,7 +55,7 @@ row1_right_vx = sq_tile*2 + rec_tile_w + 2*wall_thickness + ht;
 //top-left (0) to bottom right (16)
 hole_locations=[ 
                  [[column0_hx,top_hy],false,hrw], //0
-                 [[column1_hx,top_hy], false,hsq], //1
+                 [[column1_hx,top_hy],false,hsq], //1
                  [[column2_hx,top_hy],false,hrw], //2
                  [[left_vx+row_offset,row0_vy],true,hsq],// 3
                  [[row_offset+rec_tile_w+ht, row0_vy],true,hsq],// 4
@@ -106,10 +106,10 @@ module build_tile_feature_bottom() {
                 bottomFillet(b=0,r=.4,s=2,e=1)
                 group() {
                     linear_extrude(bottom_thickness)
-                        rounding(r=1)
+                        // rounding(r=1)
                         create_base(box_height, base_fill_percentage);
                     linear_extrude(box_height) {
-                        rounding(r=1)
+                        // rounding(r=1)
                             create_walls(box_height);
                         build_magnet_bases(box_height);
                     }
@@ -133,7 +133,7 @@ module build_tile_feature_bottom() {
 }
 
 
-use <scad-utils/morphology.scad>
+use <../scad-utils/morphology.scad>
 
 tolerance=.2;
 
@@ -159,7 +159,7 @@ module build_tile_feature_lid() {
                 bottomFillet(b=0,r=.4,s=2,e=1)
                     group() {
                         linear_extrude(bottom_thickness) {
-                            rounding(r=1)
+                            // rounding(r=1)
                                 create_base(bottom_thickness, 1);
                             build_magnet_bases(bottom_thickness);
                             translate(box_center) 
