@@ -4,18 +4,18 @@ __version__ = 7;
 build_box = false;
 build_lid = true;
 big_box = true;
-do_fillets = 1;
+do_fillets = 0;
 
 bottom_layers = 10;
 wall_lines = 5;
 num_tiles=7;
 
 include <mansions_tile_sizes.scad>;
-use <helpers/fillets/fillets2d.scad>;
-use <helpers/fillets/fillets3d.scad>;
-use <helpers/openscad_manual/list.scad>;
+use <../helpers/fillets/fillets2d.scad>;
+use <../helpers/fillets/fillets3d.scad>;
+use <../helpers/openscad_manual/list.scad>;
 
-use <scad-utils/morphology.scad>
+use <../scad-utils/morphology.scad>
 
 row_1_w = sq_tile*2+rec_tile_w;
 row_2_w = sq_tile + 2*rec_tile_w;
@@ -45,9 +45,6 @@ token_list = big_box ? big_token_list : small_token_list;
 tiles_per_column=max(token_list)+1;
 
 function calculate_tile_depth(tiles) = tiles * tile_thickness + height_slop;
-
-use <MCAD/regular_shapes.scad>
-use <MCAD/math.scad>
 
 big_box_columns = [ 
             [sq_tile, tiles_per_column, wall_thickness + sq_tile / 2, "square"], //fire
@@ -105,7 +102,7 @@ module base_box(size) {
                 }
 }
 
-use <helpers/bases.scad>
+use <../helpers/bases.scad>
 
 remaining_box_trans = [ big_box ? 2 * sq_tile + 3 * wall_thickness : sq_tile + 2*wall_thickness, 
                         min_column_depth + wall_thickness*2, 

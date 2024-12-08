@@ -1,9 +1,6 @@
 
 __version__ = 2;
 
-bottom_layers = 2;
-wall_lines = 9;
-
 include <../BOSL/constants.scad>;
 use <../BOSL/shapes.scad>;
 use <../BOSL/transforms.scad>;
@@ -38,15 +35,14 @@ outer_wall_w=magnet_d+.8;
 bottom_t=.4;
 
 base_h = square_tile / 2 + bottom_t;
-
-top_h = rectangle_tile_height-base_h+bottom_t*2;
+top_h = rectangle_tile_height - base_h + bottom_t*2;
 
 far_right=5*(rectangle_tile_width+wall_t);
 
 build_base();
 
-//fwd(40)
-//build_lid();
+fwd(40)
+    build_lid();
 
 box_width=7*tile_thickness+4*tile_thickness+2*tile_t_tol+wall_t;
 
@@ -117,15 +113,15 @@ module build_lid() {
         back(wall_t) left(outer_wall_w)
             cuboid([ 5*rectangle_tile_width + 4*wall_t + 2*outer_wall_w, 
                      box_width+wall_t*2, 
-                     base_h], 
+                     top_h], 
                    align=V_FWD+V_UP+V_RIGHT,
                    fillet=.6, edges=EDGES_Z_ALL+EDGES_BOTTOM);
 
         up(bottom_t)
-        cuboid([ 5*rectangle_tile_width + 4*wall_t,
-                 box_width, 
-                 top_h],
-               align=V_FWD+V_UP+V_RIGHT);
+            cuboid([ 5*rectangle_tile_width + 4*wall_t,
+                     box_width, 
+                     top_h],
+                   align=V_FWD+V_UP+V_RIGHT);
 
         fwd(magnet_d/2) {
             up(top_h-.4) left(mag_hole_w)
@@ -156,11 +152,13 @@ module mag_hole() {
 
 module rec_tile(count=1) {
     xrot(90)
-    cuboid([rectangle_tile_width, rectangle_tile_height, tile_thickness*count+tile_t_tol], align=V_BACK+V_RIGHT+V_UP);
+    cuboid([rectangle_tile_width, rectangle_tile_height, tile_thickness*count+tile_t_tol], 
+           align=V_BACK+V_RIGHT+V_UP);
 }
 
 module square_tile(count=1, align_x=V_RIGHT) {
     xrot(90)
-    cuboid([square_tile,square_tile,tile_thickness*count+tile_t_tol],align=V_BACK+V_UP+align_x);
+    cuboid([square_tile,square_tile,tile_thickness*count+tile_t_tol],
+           align=V_BACK+V_UP+align_x);
 }
 

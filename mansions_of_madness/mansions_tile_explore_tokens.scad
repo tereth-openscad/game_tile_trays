@@ -32,8 +32,8 @@ include <mansions_tile_features_tray_holes.scad>;
 use <mansions_tiles.scad>;
 //include <mansions_tile_magnets.scad>;
 
-use <helpers/fillets/fillets2d.scad>
-use <helpers/fillets/fillets3d.scad>
+use <../helpers/fillets/fillets2d.scad>
+use <../helpers/fillets/fillets3d.scad>
 module build_base(wall_height) {
 
     rounding2d(1)
